@@ -40,6 +40,7 @@
       ll = "ls -l";
       dodo = "shutdown now";
       lz = "lazygit";
+      nix-shell = "export NIXPKGS_ALLOW_UNFREE=1; nix-shell";
       ufda = "echo 'use flake' | tee .envrc && direnv allow";
     };
 
