@@ -21,7 +21,7 @@ def _toggle(device: int, control: int):
     return wrapper
 
 
-@_toggle(device=12, control=150)
+@_toggle(device=13, control=158)
 def toggle_keypad(device: int, control: int, state: bool):
     os.system(f"xinput set-prop {device} {control} {int(state)}")
 
