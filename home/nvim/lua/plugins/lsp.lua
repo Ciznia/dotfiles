@@ -1,7 +1,7 @@
-local lsp = require("lsp-zero").preset({})
-local lspconfig = require("lspconfig")
+local lsp_zero = require("lsp-zero").preset({})
+local lsp = require("lspconfig")
 
-lspconfig.lua_ls.setup {
+lsp.lua_ls.setup {
   settings = {
     Lua = {
       runtime = {
@@ -24,8 +24,8 @@ lspconfig.lua_ls.setup {
 }
 
 lsp.hls.setup({})
-lspconfig.nil_ls.setup({})
-lspconfig.clangd.setup({
+lsp.nil_ls.setup({})
+lsp.clangd.setup({
   cmd = {
     "clangd",
     "--background-index",
@@ -35,7 +35,7 @@ lspconfig.clangd.setup({
     "--cross-file-rename",
   }
 })
-lspconfig.pyright.setup({})
+lsp.pyright.setup({})
 
 -- ↓ Epitech CS
 local configs = require("lspconfig.configs")
@@ -43,7 +43,7 @@ local configs = require("lspconfig.configs")
 if not configs.ecsls then
   configs.ecsls = {
     default_config = {
-      root_dir = lspconfig.util.root_pattern(".git", "Makefile"),
+      root_dir = lsp.util.root_pattern(".git", "Makefile"),
       cmd = { "ecsls_run" },
       autostart = true,
       name = "ecsls",
@@ -51,23 +51,23 @@ if not configs.ecsls then
     },
   }
 end
-lspconfig.ecsls.setup({})
+lsp.ecsls.setup({})
 -- ↓ Epitech HCS
 if not configs.ehcsls then
   configs.ehcsls = {
     default_config = {
-      root_dir = lspconfig.util.root_pattern(".git"),
+      root_dir = lsp.util.root_pattern(".git", "Makefile"),
       cmd = { "ehcsls_run" },
       autostart = true,
       name = "ehcsls",
-      filetypes = { "haskell" },
+      filetypes = { "haskell", "make" },
     },
   }
 end
-lspconfig.ehcsls.setup({})
+lsp.ehcsls.setup({})
 --
 
-lsp.on_attach(function(_, bufnr)
+lsp_zero.on_attach(function(_, bufnr)
   local opts = { buffer = bufnr, remap = false }
 
   vim.keymap.set("n", "gd", function() vim.lsp.buf.definition() end, opts)
@@ -75,8 +75,8 @@ lsp.on_attach(function(_, bufnr)
   vim.keymap.set("n", "ga", function() vim.lsp.buf.code_action() end, opts)
   vim.keymap.set("i", "<C-h>", function() vim.lsp.buf.signature_help() end, opts)
 
-  lsp.default_keymaps({buffer = bufnr})
+  lsp_zero.default_keymaps({buffer = bufnr})
 end)
 
-lsp.setup()
+lsp_zero.setup()
 
