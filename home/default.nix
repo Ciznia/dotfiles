@@ -72,6 +72,9 @@
         peek
         ripgrep
         dconf
+
+
+        vscode
       ];
   };
 
