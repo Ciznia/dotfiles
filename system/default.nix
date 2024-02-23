@@ -127,7 +127,6 @@
 
     gvfs.enable = true;
     tumbler.enable = true;
-    openssh.enable = true;
 
     picom = {
       enable = true;
@@ -157,6 +156,12 @@
     };
 
     upower.enable = true;
+
+    openssh = {
+      enable = true;
+      ports = [ 22 ]; # I think this needs to be changes from default because Windows OpenSSH is already listening on 22?
+      settings.PasswordAuthentication = true;
+    };
   };
 
   users.users.${username} = {
@@ -228,6 +233,11 @@
 
       zip
       unzip
+
+      clang-analyzer
+      clang-tools_17
+
+      python3Packages.compiledb
     ];
   };
 

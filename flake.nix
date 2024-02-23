@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs_unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     ecsls.url = "github:Sigmapitech/ecsls";
     ehcsls.url = "github:Sigmapitech/ehcsls";
@@ -19,14 +20,20 @@
   outputs = inputs:
     with inputs; let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      cfg = {
+        inherit system;
+        config.allowUnfree = true;
+      };
+
+      pkgs = import nixpkgs.legacyPackages cfg;
+      pkgs_unstable = import inputs.nixpkgs_unstable cfg;
     in
     {
       formatter.${system} = pkgs.nixpkgs-fmt;
 
       nixosConfigurations = {
         cizchine = nixpkgs.lib.nixosSystem
-          (import ./cizchine.nix { inherit inputs system; });
+          (import ./cizchine.nix { inherit inputs system pkgs_unstable; });
       };
     };
 }

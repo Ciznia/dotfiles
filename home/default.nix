@@ -1,4 +1,4 @@
-{ pkgs, username, ... }:
+{ pkgs, username, pkgs_unstable, ... }:
 {
   nixpkgs.config.allowUnfree = true;
 
@@ -74,7 +74,7 @@
         dconf
 
 
-        vscode
+        pkgs_unstable.vscode
       ];
   };
 

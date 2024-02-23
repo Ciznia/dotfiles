@@ -1,4 +1,4 @@
-{ inputs, system }: with inputs;
+{ inputs, system, pkgs_unstable, ... }: with inputs;
 let
   username = "cizniarova";
 in
@@ -18,7 +18,7 @@ in
           useUserPackages = true;
           users.${username} = import ./home;
           extraSpecialArgs = {
-            inherit username system ecsls ehcsls;
+            inherit username system ecsls ehcsls pkgs_unstable;
           };
         };
       };
@@ -28,7 +28,6 @@ in
       };
 
       mod-nixhardware-lst = with nixos-hardware.nixosModules; [
-        asus-battery
         common-pc-laptop
         common-cpu-amd
         common-pc-ssd
