@@ -73,6 +73,8 @@
         ripgrep
         dconf
 
+        clang-analyzer
+        clang-tools_17
 
         pkgs_unstable.vscode
       ];

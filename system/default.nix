@@ -234,9 +234,6 @@
       zip
       unzip
 
-      clang-analyzer
-      clang-tools_17
-
       python3Packages.compiledb
     ];
   };
