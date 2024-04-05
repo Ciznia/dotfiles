@@ -29,7 +29,6 @@ in
 
       mod-nixhardware-lst = with nixos-hardware.nixosModules; [
         common-pc-laptop
-        common-cpu-amd
         common-pc-ssd
       ];
     in

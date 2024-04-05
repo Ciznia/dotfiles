@@ -1,8 +1,10 @@
 Checks: "-*,
   bugprone-*,
   -bugprone-easily-swappable-parameters,
+  -bugprone-reserved-identifier
   misc-*,
   -misc-no-recursion,
+  -misc-non-private-member-variables-in-classes
   performance-*,
   portability-*,
   readability-*,
@@ -10,10 +12,12 @@ Checks: "-*,
   -readability-magic-numbers,
   -readability-braces-around-statements,
   -readability-identifier-length,
+  -readability-identifier-naming,
   clang-analyzer-*,
   modernize-*,
-  llvm-*,
-"
+  -modernize-use-trailing-return-type,
+  -modernize-redundant-void-arg,
+  llvm-*"
 
 CheckOptions:
   - key:   readability-identifier-naming.EnumCase

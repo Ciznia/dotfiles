@@ -1,4 +1,4 @@
-{ username, hostname, pkgs, ... }:
+{ config, username, hostname, pkgs, ... }:
 {
   imports =
     [
@@ -9,9 +9,9 @@
     consoleLogLevel = 0;
     initrd = {
       verbose = false;
-      kernelModules = [ "amdgpu" ];
     };
 
+    kernelParams = [ "module_blacklist=amdgpu" ];
     loader = {
       efi.canTouchEfiVariables = true;
       grub = {
@@ -84,7 +84,24 @@
 
   hardware = {
     pulseaudio.enable = false;
-    opengl.enable = true;
+    opengl = {
+      enable = true;
+      extraPackages = [ pkgs.libGL ];
+      setLdLibraryPath = true;
+    };
+    nvidia = {
+      modesetting.enable = true;
+      open = false;
+      package = config.boot.kernelPackages.nvidiaPackages.stable;
+      prime = {
+        offload = {
+          enable = true;
+          enableOffloadCmd = true;
+        };
+        intelBusId = "PCI:00:02:0";
+        nvidiaBusId = "PCI:01:00:0";
+      };
+    };
   };
 
   programs = {
@@ -143,6 +160,7 @@
     xserver = {
       enable = true;
       displayManager.startx.enable = true;
+      videoDrivers = [ "nvidia" ];
       layout = "fr";
       libinput = {
         enable = true;
@@ -244,11 +262,4 @@
   };
 
   qt.style = "adwaita-dark";
-  xdg.portal = {
-    enable = true;
-    config.common.default = "*";
-    extraPortals = [
-      pkgs.xdg-desktop-portal-kde
-    ];
-  };
 }

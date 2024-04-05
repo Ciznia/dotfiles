@@ -1,6 +1,7 @@
 { pkgs, ... }:
 {
   programs.zsh = {
+    profileExtra = "autoload -U colors && colors";
     enable = true;
     enableAutosuggestions = true;
     enableCompletion = true;
@@ -34,15 +35,6 @@
           sha256 = "0NW0TI//qFpUA2Hdx6NaYdQIIUpRSd0Y4NhwBbdssCs=";
         };
       }
-      {
-        name = "colored-man-pages";
-        src = pkgs.fetchFromGitHub {
-          owner = "ael-code";
-          repo = "zsh-colored-man-pages";
-          rev = "57bdda68e52a09075352b18fa3ca21abd31df4cb";
-          sha256 = "sha256-087bNmB5gDUKoSriHIjXOVZiUG5+Dy9qv3D69E8GBhs=";
-        };
-      }
     ];
 
     shellAliases = {
@@ -53,6 +45,8 @@
       ufda = "echo 'use flake' | tee .envrc && direnv allow";
       moulie = "docker run -it --rm -v $(pwd):/home/project -w /home/project epitechcontent/epitest-docker /bin/bash";
       cs = "nix run github:Sigmapitech/cs";
+      cd = "z";
+      reboot = "reboot now";
     };
 
     oh-my-zsh = {
@@ -62,6 +56,7 @@
       theme = "sigma";
 
       plugins = [
+        "colored-man-pages"
         "git"
         "ssh-agent"
       ];

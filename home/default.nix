@@ -72,11 +72,17 @@
         peek
         ripgrep
         dconf
+        xclip
+        appimage-run
 
         clang-analyzer
         clang-tools_17
 
         pkgs_unstable.vscode
+
+        # Games
+        steam
+        minecraft
       ];
   };
 
@@ -98,5 +104,9 @@
 
     feh.enable = true;
     lazygit.enable = true;
+    zoxide = {
+      enable = true;
+      enableZshIntegration = true;
+    };
   };
 }
