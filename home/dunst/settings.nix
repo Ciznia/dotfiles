@@ -3,7 +3,7 @@
   global = {
     alignment = "left";
     always_run_script = true;
-    browser = "${pkgs.floorp}/bin/floorp";
+    browser = "${pkgs.firefox}/bin/firefox";
 
     font = "JetBrainsMono Nerd Font Mono 10";
     frame_color = "#8AADF4";

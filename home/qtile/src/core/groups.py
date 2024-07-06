@@ -16,7 +16,7 @@ class _Group(Group):
     @classmethod
     def setup_single_keys(cls):
         toggle_term = Key(
-            [mod, "shift"], "space",
+            [mod], "space",
             lazy.group["scratchpad"].dropdown_toggle("term"),
         )
 

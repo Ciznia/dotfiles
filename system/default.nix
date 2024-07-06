@@ -237,6 +237,8 @@
 
     shells = [ pkgs.zsh ];
     systemPackages = with pkgs; [
+      firefox
+
       alsa-utils
       modemmanager
       networkmanagerapplet
