@@ -3,24 +3,45 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    vera-clang = {
+      url = "github:Sigmapitech/vera-clang";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
+    };
+
+    ecsls = {
+      url = "github:Sigmapitech/ecsls";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        utils.follows = "flake-utils";
+        # Cannot use nested vera-clang.inputs.nixpkgs.follows
+        # See https://github.com/NixOS/nix/issues/5790
+        vera-clang.follows = "vera-clang";
+      };
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager}: let
+  outputs = { nixpkgs, home-manager, ecsls, ... }: let
     system = "x86_64-linux";
-
-    config = {
-      username = "ciznia";
-      hostname = "cizchine";
-    };
 
     pkgs = import nixpkgs ({
       inherit system;
       config.allowUnfree = true;
     });
+
+    config = {
+      username = "ciznia";
+      hostname = "cizchine";
+    };
 
     home-manager-config = {
         home-manager = {
@@ -29,6 +50,8 @@
           users.${config.username} = import ./home;
           extraSpecialArgs = config // {
             inherit system pkgs;
+
+            lsps = { inherit ecsls; };
           };
       };
     };

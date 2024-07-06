@@ -1,5 +1,49 @@
 {
   "nodes": {
+    "ecsls": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "utils": [
+          "flake-utils"
+        ],
+        "vera-clang": [
+          "vera-clang"
+        ]
+      },
+      "locked": {
+        "lastModified": 1711215976,
+        "narHash": "sha256-Gm2uwowHGgY4Ky7IhaZJBWM/rd+oB7OyKedPsTkJyPw=",
+        "owner": "Sigmapitech",
+        "repo": "ecsls",
+        "rev": "c4565d5167ecb747008e0af08a81d75a1c8ab0fa",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Sigmapitech",
+        "repo": "ecsls",
+        "type": "github"
+      }
+    },
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1710146030,
+        "narHash": "sha256-SZ5L6eA7HJ/nmkzGG7/ISclqe6oZdOZTNoesiInkXPQ=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "b1d9ab70662946ef0850d488da1c9019f3a9752a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -38,8 +82,49 @@
     },
     "root": {
       "inputs": {
+        "ecsls": "ecsls",
+        "flake-utils": "flake-utils",
         "home-manager": "home-manager",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "vera-clang": "vera-clang"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "vera-clang": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1711917285,
+        "narHash": "sha256-xWNnPV0qpBNxrS7XnE1ARhGps+CmGY/eZ10vo2k+ucI=",
+        "owner": "Sigmapitech",
+        "repo": "vera-clang",
+        "rev": "246aaa1634238c610d35f6051e6b5e910042ef40",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Sigmapitech",
+        "repo": "vera-clang",
+        "type": "github"
       }
     }
   },

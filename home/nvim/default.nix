@@ -1,4 +1,4 @@
-{ pkgs, system, ... }:
+{ pkgs, system, lsps, ... }:
 {
   home.file = {
     nvim_conf = {
@@ -24,8 +24,9 @@
     extraConfig = (builtins.readFile ./.vimrc);
     plugins = [ pkgs.vimPlugins.lazy-nvim ];
 
-    extraPackages = with pkgs;
-    [
+    extraPackages = with pkgs; let
+      getFlakePkg = f: f.packages.${system}.default;
+    in [
       nil
       lua-language-server
       pyright
@@ -34,6 +35,7 @@
       nodejs
       xclip
       jdt-language-server
+      (getFlakePkg lsps.ecsls)
     ];
   };
 }
