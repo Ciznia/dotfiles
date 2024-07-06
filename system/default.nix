@@ -72,44 +72,43 @@
 
   hardware = {
     pulseaudio.enable = false;
-    #    opengl = {
-    #      enable = true;
-    #
-    #      driSupport = true;
-    #      driSupport32Bit = true;
-    #
-    #      extraPackages = with pkgs; [
-    #        amdvlk
-    #        intel-media-driver # LIBVA_DRIVER_NAME=iHD
-    #        libvdpau-va-gl
-    #        nvidia-vaapi-driver
-    #        vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
-    #        vaapiVdpau
-    #        vulkan-validation-layers
-    #      ];
-    #
-    #    };
+    opengl = {
+      enable = true;
 
-    #    nvidia = {
-    #      modesetting.enable = true;
-    #      package = config.boot.kernelPackages.nvidiaPackages.stable;
-    #
-    #      powerManagement.enable = false;
-    #      powerManagement.finegrained = false;
-    #
-    #      open = false;
-    #      nvidiaSettings = true;
-    #
-    #      prime = {
-    #        offload = {
-    #          enable = true;
-    #          enableOffloadCmd = true;
-    #        };
-    #
-    #        amdgpuBusId = "PCI:5:0:0";
-    #        nvidiaBusId = "PCI:1:0:0";
-    #      };
-    #    };
+      driSupport = true;
+      driSupport32Bit = true;
+      extraPackages = with pkgs; [
+        amdvlk
+        intel-media-driver # LIBVA_DRIVER_NAME=iHD
+        libvdpau-va-gl
+        nvidia-vaapi-driver
+        vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+        vaapiVdpau
+        vulkan-validation-layers
+      ];
+
+    };
+
+    nvidia = {
+      modesetting.enable = true;
+      package = config.boot.kernelPackages.nvidiaPackages.stable;
+
+      powerManagement.enable = false;
+      powerManagement.finegrained = false;
+
+      open = false;
+      nvidiaSettings = true;
+
+      prime = {
+        offload = {
+          enable = true;
+          enableOffloadCmd = true;
+        };
+
+        amdgpuBusId = "PCI:0:2:0";
+        nvidiaBusId = "PCI:1:0:0";
+      };
+    };
   };
 
   programs = {
@@ -184,7 +183,7 @@
       enable = true;
       displayManager.startx.enable = true;
       xkb.layout = "fr";
-      # videoDrivers = [ "nvidia" ];
+      videoDrivers = [ "nvidia" ];
 
       windowManager.qtile = {
         enable = true;
@@ -255,6 +254,8 @@
       gnumake
       glibc
       gcc
+      bear
+      python3Packages.compiledb
 
       libnotify
       virt-manager
