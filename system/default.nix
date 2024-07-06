@@ -188,7 +188,6 @@
 
       windowManager.qtile = {
         enable = true;
-        backend = "x11";
       };
     };
 
