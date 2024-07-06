@@ -26,7 +26,8 @@
 
     extraPackages = with pkgs; let
       getFlakePkg = f: f.packages.${system}.default;
-    in [
+    in
+    [
       nil
       lua-language-server
       pyright

@@ -30,20 +30,21 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, ecsls, ... }: let
-    system = "x86_64-linux";
+  outputs = { nixpkgs, home-manager, ecsls, ... }:
+    let
+      system = "x86_64-linux";
 
-    pkgs = import nixpkgs ({
-      inherit system;
-      config.allowUnfree = true;
-    });
+      pkgs = import nixpkgs ({
+        inherit system;
+        config.allowUnfree = true;
+      });
 
-    config = {
-      username = "ciznia";
-      hostname = "cizchine";
-    };
+      config = {
+        username = "ciznia";
+        hostname = "cizchine";
+      };
 
-    home-manager-config = {
+      home-manager-config = {
         home-manager = {
           useGlobalPkgs = true;
           useUserPackages = true;
@@ -53,22 +54,23 @@
 
             lsps = { inherit ecsls; };
           };
+        };
+      };
+    in
+    {
+      formatter.${system} = pkgs.nixpkgs-fmt;
+      nixosConfigurations.${config.hostname} = nixpkgs.lib.nixosSystem {
+        specialArgs = config // { inherit pkgs; };
+
+        modules = [
+          ./system
+          ./hardware-configuration.nix
+        ] ++ [
+          { networking.hostName = config.hostname; }
+        ] ++ [
+          home-manager.nixosModules.home-manager
+          home-manager-config
+        ];
       };
     };
-  in {
-    formatter.${system} = pkgs.nixpkgs-fmt;
-    nixosConfigurations.${config.hostname} = nixpkgs.lib.nixosSystem {
-      specialArgs = config // { inherit pkgs; };
-
-      modules = [
-        ./system
-        ./hardware-configuration.nix
-      ] ++ [
-        { networking.hostName = config.hostname; }
-      ] ++ [
-        home-manager.nixosModules.home-manager
-        home-manager-config
-      ];
-    };
-  };
 }
