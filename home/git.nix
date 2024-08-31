@@ -19,6 +19,7 @@
       # C commons
       ".cache"
       "compile_commands.json"
+      ".pre-commit-config.yaml"
       ".fast"
       "*.gc??"
       "vgcore.*"

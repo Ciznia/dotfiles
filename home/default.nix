@@ -49,6 +49,7 @@
       lazygit
       tokei
       wakatime
+      zathura
 
       # misc
       spotify
@@ -59,6 +60,10 @@
       peek
       ripgrep
       dconf
+      xclip
+
+      # Game
+      prismlauncher
     ];
   };
 

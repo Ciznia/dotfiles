@@ -72,11 +72,9 @@
 
   hardware = {
     pulseaudio.enable = false;
-    opengl = {
+    graphics = {
       enable = true;
 
-      driSupport = true;
-      driSupport32Bit = true;
       extraPackages = with pkgs; [
         amdvlk
         intel-media-driver # LIBVA_DRIVER_NAME=iHD
@@ -105,7 +103,7 @@
           enableOffloadCmd = true;
         };
 
-        amdgpuBusId = "PCI:0:2:0";
+        intelBusId = "PCI:0:2:0";
         nvidiaBusId = "PCI:1:0:0";
       };
     };
