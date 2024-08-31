@@ -61,6 +61,7 @@
       ripgrep
       dconf
       xclip
+      pamixer
 
       # Game
       prismlauncher

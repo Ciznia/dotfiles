@@ -22,28 +22,18 @@ def _toggle(*args, **kwargs):
     return wrapper
 
 
-@_toggle(control=150)
-def toggle_keypad(control: int, state: bool):
-    proc = subprocess.run("xinput list | grep Touchpad",
-        text=True, capture_output=True)
-
-    id_ = re.search(r"id=(\d+)", proc.stdout)
-    if id_ is None:
-        return
-
-    os.system(f"xinput set-prop {id_} {control} {int(state)}")
-
+@_toggle(id = 13)
+def toggle_keypad(id: int, state: bool):
+    os.system(f"xinput {'enable' if not state else 'disable'} {id}")
 
 keys = [
     Key([mod], "e", lazy.spawn("thunar")),
-    Key([mod], "v", lazy.spawn("kitty -e pulsemixer")),
     Key([mod], "h", lazy.spawn("kitty -e nmtui")),
     Key([mod, "shift"], "v", lazy.spawn("pavucontrol")),
     Key([mod], "l", lazy.spawn("betterlockscreen -l")),
     Key([mod], "f", lazy.window.toggle_floating()),
     Key([mod], "b", lazy.spawn("firefox")),
     Key([], "Print", lazy.spawn("flameshot gui --clipboard")),
-    Key([mod], "space", lazy.layout.next()),
     Key([mod, "shift"], "h", lazy.layout.shuffle_left()),
     Key([mod], "n", lazy.layout.normalize()),
     Key([mod], "Return", lazy.spawn("kitty")),
@@ -52,7 +42,7 @@ keys = [
     Key([mod, "control"], "r", lazy.reload_config()),
     Key([mod, "control"], "q", lazy.shutdown()),
     Key([mod], "r", lazy.spawncmd()),
-    Key([], "XF86TouchpadToggle", lazy.function(toggle_keypad)),
+    Key([mod], "p", lazy.function(toggle_keypad)),
     # Backlight
     Key([], "XF86MonBrightnessUp", lazy.spawn("brightnessctl set +5%")),
     Key([], "XF86MonBrightnessDown", lazy.spawn("brightnessctl set 5%-")),
