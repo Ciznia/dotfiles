@@ -5,13 +5,15 @@
     userName = "Ciznia";
     userEmail = "gabriel.hosquet" + "@" + "epitech.eu";
 
-    extraConfig.url = {
+    extraConfig = {
       init = {
         defaultBranch = "main";
       };
 
-      "ssh://git@github.com/" = {
-        insteadOf = "https://github.com/";
+      url = {
+        "ssh://git@github.com/" = {
+          insteadOf = "https://github.com/";
+        };
       };
     };
 
@@ -23,6 +25,7 @@
       ".fast"
       "*.gc??"
       "vgcore.*"
+      "ecsls.toml"
       # C build
       "*.[oda]"
       # Python
@@ -35,7 +38,7 @@
       # Direnv
       ".direnv"
       ".envrc"
-      # Nix buid
+      # Nix build
       "result"
       # IDE Folders
       ".idea"

@@ -199,14 +199,14 @@
   };
 
   fonts.packages = with pkgs; [
-    (nerdfonts.override { fonts = [ "JetBrainsMono" ]; })
     dina-font
+    nerd-fonts.jetbrains-mono
     fira-code
     fira-code-symbols
     liberation_ttf
     mplus-outline-fonts.githubRelease
     noto-fonts
-    noto-fonts-cjk
+    noto-fonts-cjk-sans
     noto-fonts-emoji
     proggyfonts
     apl386
@@ -253,7 +253,7 @@
       glibc
       gcc
       bear
-      python3Packages.compiledb
+      compiledb
 
       libnotify
       virt-manager

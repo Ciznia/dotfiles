@@ -13,11 +13,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1711215976,
-        "narHash": "sha256-Gm2uwowHGgY4Ky7IhaZJBWM/rd+oB7OyKedPsTkJyPw=",
+        "lastModified": 1735842391,
+        "narHash": "sha256-iej5Hys/qrWX0f5Lkp0riL+tlp6aixDMfy4bzWFHUKo=",
         "owner": "Sigmapitech",
         "repo": "ecsls",
-        "rev": "c4565d5167ecb747008e0af08a81d75a1c8ab0fa",
+        "rev": "ab32c6af9860bff7e76d73238ffa6aeebd29c7f2",
         "type": "github"
       },
       "original": {
@@ -31,11 +31,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1710146030,
-        "narHash": "sha256-SZ5L6eA7HJ/nmkzGG7/ISclqe6oZdOZTNoesiInkXPQ=",
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "b1d9ab70662946ef0850d488da1c9019f3a9752a",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
         "type": "github"
       },
       "original": {
@@ -51,11 +51,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1720188602,
-        "narHash": "sha256-lC3byBmhVZFzWl/dCic8+cKUEEAXAswWOYjq4paFmbo=",
+        "lastModified": 1736089250,
+        "narHash": "sha256-/LPWMiiJGPHGd7ZYEgmbE2da4zvBW0acmshUjYC3WG4=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "e3582e5151498bc4d757e8361431ace8529e7bb7",
+        "rev": "172b91bfb2b7f5c4a8c6ceac29fd53a01ef07196",
         "type": "github"
       },
       "original": {
@@ -66,11 +66,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1720031269,
-        "narHash": "sha256-rwz8NJZV+387rnWpTYcXaRNvzUSnnF9aHONoJIYmiUQ=",
+        "lastModified": 1736012469,
+        "narHash": "sha256-/qlNWm/IEVVH7GfgAIyP6EsVZI6zjAx1cV5zNyrs+rI=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "9f4128e00b0ae8ec65918efeba59db998750ead6",
+        "rev": "8f3e1f807051e32d8c95cd12b9b421623850a34d",
         "type": "github"
       },
       "original": {
@@ -114,11 +114,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1711917285,
-        "narHash": "sha256-xWNnPV0qpBNxrS7XnE1ARhGps+CmGY/eZ10vo2k+ucI=",
+        "lastModified": 1728590431,
+        "narHash": "sha256-nXVlXhc3nA1SMf6GXJu8dN15EFaPVUA0GamDN/3kK9E=",
         "owner": "Sigmapitech",
         "repo": "vera-clang",
-        "rev": "246aaa1634238c610d35f6051e6b5e910042ef40",
+        "rev": "10d3bcc8c14204bfeeae4bd3bbe4f2d6845a21cf",
         "type": "github"
       },
       "original": {
