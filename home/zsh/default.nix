@@ -41,6 +41,7 @@
       dodo = "shutdown now";
       lz = "lazygit";
       ufda = "echo 'use flake' | tee .envrc && direnv allow";
+      cd = "z";
     };
 
     oh-my-zsh = {
