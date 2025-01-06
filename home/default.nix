@@ -1,4 +1,4 @@
-{ pkgs, username, ... }:
+{ pkgs, username, lsps, ... }:
 {
   nixpkgs.config.allowUnfree = true;
 
@@ -50,6 +50,11 @@
       tokei
       wakatime
       zathura
+      vscode
+      lsps.ecsls.packages.${pkgs.system}.ecsls
+
+      llvmPackages_19.clang-tools
+      nodejs
 
       # misc
       spotify
