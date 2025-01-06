@@ -1,19 +1,26 @@
-{ config, username, pkgs, ... }:
+{ username, pkgs, ... }:
 {
-  imports = [ ./polkit.nix ];
+  imports = [
+    ./polkit.nix
+  ];
+
+  catppuccin = {
+    enable = true;
+    flavor = "macchiato";
+  };
 
   boot = {
     consoleLogLevel = 0;
-    initrd = {
-      verbose = false;
-    };
+    initrd.verbose = false;
 
+    kernelPackages = pkgs.linuxPackages_latest;
     loader = {
+      efi.canTouchEfiVariables = true;
       grub = {
         enable = true;
         efiSupport = true;
         device = "nodev";
-        gfxmodeEfi = "1920x1080x32";
+        gfxmodeEfi = "1920x1280x32";
         useOSProber = true;
       };
     };
@@ -72,41 +79,6 @@
 
   hardware = {
     pulseaudio.enable = false;
-    graphics = {
-      enable = true;
-
-      extraPackages = with pkgs; [
-        amdvlk
-        intel-media-driver # LIBVA_DRIVER_NAME=iHD
-        libvdpau-va-gl
-        nvidia-vaapi-driver
-        vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
-        vaapiVdpau
-        vulkan-validation-layers
-      ];
-
-    };
-
-    nvidia = {
-      modesetting.enable = true;
-      package = config.boot.kernelPackages.nvidiaPackages.stable;
-
-      powerManagement.enable = false;
-      powerManagement.finegrained = false;
-
-      open = false;
-      nvidiaSettings = true;
-
-      prime = {
-        offload = {
-          enable = true;
-          enableOffloadCmd = true;
-        };
-
-        intelBusId = "PCI:0:2:0";
-        nvidiaBusId = "PCI:1:0:0";
-      };
-    };
   };
 
   programs = {
@@ -118,24 +90,14 @@
       enableSSHSupport = true;
     };
 
-    steam.enable = true;
-    thunar = {
-      enable = true;
-      plugins = with pkgs.xfce; [
-        thunar-archive-plugin
-        thunar-volman
-      ];
-    };
-
-    thunderbird.enable = true;
-
-    zsh.enable = true;
-    noisetorch.enable = true;
-
     nix-ld = {
       enable = true;
       libraries = [ pkgs.glibc ];
     };
+    noisetorch.enable = true;
+    steam.enable = true;
+    thunderbird.enable = true;
+    zsh.enable = true;
   };
 
   security.rtkit.enable = true;
@@ -162,13 +124,8 @@
     };
 
     gvfs.enable = true;
-    tumbler.enable = true;
     openssh.enable = true;
-
-    picom = {
-      enable = true;
-      fade = true;
-    };
+    tumbler.enable = true;
 
     pipewire = {
       enable = true;
@@ -180,15 +137,20 @@
     xserver = {
       enable = true;
       displayManager.startx.enable = true;
-      xkb.layout = "fr";
-      videoDrivers = [ "nvidia" ];
-
-      windowManager.qtile = {
-        enable = true;
+      xkb = {
+        layout = "fr";
+        extraLayouts.custom = {
+          description = "qwerty with characters";
+          languages = [ "eng" ];
+          symbolsFile =
+            let
+              layout = (pkgs.callPackage ./qwerty-fr.nix { });
+            in
+            "${layout}/share/X11/xkb/symbols/us_qwerty-fr";
+        };
       };
+      windowManager.qtile.enable = true;
     };
-
-    upower.enable = true;
   };
 
   users.users.${username} = {
@@ -199,30 +161,20 @@
   };
 
   fonts.packages = with pkgs; [
-    dina-font
-    nerd-fonts.jetbrains-mono
+    apl386
     fira-code
     fira-code-symbols
     liberation_ttf
-    mplus-outline-fonts.githubRelease
+    nerd-fonts.jetbrains-mono
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-emoji
     proggyfonts
-    apl386
   ];
-
-  virtualisation = {
-    docker = {
-      enable = true;
-      package = pkgs.docker;
-    };
-
-    libvirtd.enable = true;
-  };
 
   documentation.dev.enable = true;
   environment = {
+    etc.issue.text = (builtins.readFile ./issuerc);
     pathsToLink = [ "/share/nix-direnv" ];
     sessionVariables = {
       MOZ_USE_XINPUT2 = "1";
@@ -234,25 +186,15 @@
 
     shells = [ pkgs.zsh ];
     systemPackages = with pkgs; [
-      firefox
-
       alsa-utils
       modemmanager
       networkmanagerapplet
       playerctl
 
       git
-      htop
       tree
-      vim
-      vifm
+      neovim
       wget
-
-      gnumake
-      glibc
-      gcc
-      bear
-      compiledb
 
       libnotify
       virt-manager
@@ -260,23 +202,20 @@
       man-pages
       man-pages-posix
 
-      zip
-      unzip
+      gnumake
+      gcc
+      glibc
     ];
   };
 
-  system = {
-    copySystemConfiguration = false;
-    stateVersion = "24.05";
+  virtualisation = {
+    docker = {
+      enable = true;
+      package = pkgs.docker;
+    };
+
+    libvirtd.enable = true;
   };
 
-  qt.style = "adwaita-dark";
-  xdg.portal = {
-    enable = true;
-    config.common.default = "*";
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-wlr
-      xdg-desktop-portal-gtk
-    ];
-  };
+  zramSwap.enable = true;
 }

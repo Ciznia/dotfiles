@@ -7,8 +7,8 @@
     };
 
     wallpaper = {
-      source = ./../assets/wallpaper.png;
-      target = "assets/wallpaper.png";
+      source = ./../assets/wallpaper.jpeg;
+      target = "assets/wallpaper.jpeg";
     };
   };
 }

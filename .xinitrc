@@ -43,10 +43,16 @@ if command -v dbus-update-activation-environment >/dev/null 2>&1; then
   dbus-update-activation-environment DISPLAY XAUTHORITY
 fi
 
+if [ "$HOSTNAME" = Bacon ]; then
+    xset s off -dpms
+    picom -f --backend glx &
+else
+    picom -f --backend xrender &
+fi
 
 # ↓ Wm startup
-picom -f &
 setxkbmap fr &
 flameshot &
 dunst &
+#xrandr --output HDMI-0 --right-of DP-1 --primary &
 exec qtile start

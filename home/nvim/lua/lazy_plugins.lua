@@ -19,7 +19,6 @@ end
 
 return apply_shortcut({
   "lukoshkin/highlight-whitespace",
-  "mfussenegger/nvim-jdtls",
   {
     "catppuccin/nvim",
     _user_conf = "colorscheme",
@@ -47,11 +46,9 @@ return apply_shortcut({
   {
     "akinsho/toggleterm.nvim",
     _user_conf = "toggleterm",
-    tag = "*",
   },
   {
     "tanvirtin/vgit.nvim",
-    version = "v0.2.1",
     dependencies = { "nvim-lua/plenary.nvim" },
     config = function()
       require("vgit").setup()
@@ -78,5 +75,16 @@ return apply_shortcut({
   {
     'folke/todo-comments.nvim',
     dependencies = { 'nvim-lua/plenary.nvim' },
+  },
+  {
+    'mrcjkb/haskell-tools.nvim',
+    version = '^4', -- Recommended
+    lazy = false, -- This plugin is already lazy
+  },
+  {
+    "https://git.sr.ht/~whynothugo/lsp_lines.nvim",
+    config = function ()
+      require("lsp_lines").setup()
+    end
   },
 })

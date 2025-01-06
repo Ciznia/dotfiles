@@ -1,0 +1,19 @@
+* text=lf
+* eol=lf
+
+*.png binary
+*.jpg binary
+
+*.* linguist-detectable
+*.ini -linguist-detectable
+
+*.md -linguist-documentation
+*.md -linguist-generated
+
+config/bpytop/bpytop.conf linguist-language=shell
+config/neofetch/config.conf linguist-language=shell
+config/zsh/sigma.zsh-theme linguist-language=shell
+
+.bashrc linguist-language=shell
+.profile linguist-language=shell
+.xinitrc linguist-language=shell

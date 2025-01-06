@@ -18,16 +18,17 @@
     };
 
     ignores = [
+      # Project config file
+      ".fast"
+      "ecsls.toml"
+      ".pre-commit-config.yaml"
+      "compile_commands.json"
+
       # C commons
       ".cache"
-      "compile_commands.json"
-      ".pre-commit-config.yaml"
-      ".fast"
       "*.gc??"
       "vgcore.*"
-      "ecsls.toml"
-      # C build
-      "*.[oda]"
+
       # Python
       "venv"
       # Locked Files
@@ -38,7 +39,7 @@
       # Direnv
       ".direnv"
       ".envrc"
-      # Nix build
+      # Nix buid
       "result"
       # IDE Folders
       ".idea"

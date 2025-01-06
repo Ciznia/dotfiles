@@ -1,21 +1,24 @@
-{ pkgs, username, lsps, ... }:
+{ pkgs, username, osConfig, ecsls, ehcsls, ... }:
 {
   nixpkgs.config.allowUnfree = true;
 
-  imports = [
-    ./nvim
+  catppuccin = {
+    enable = true;
+    flavor = "macchiato";
+    accent = "blue";
+  };
 
+  imports = [
     ./bash
+    ./betterlockscreen
     ./btop
-    ./neofetch
-    ./picom
     ./dunst
+    ./neofetch
+    ./nvim
+    ./picom
     ./qtile
-    ./thunar
-    ./tmux
     ./zsh
 
-    ./betterlockscreen
     ./cursor.nix
     ./extra_files.nix
     ./flameshot.nix
@@ -24,22 +27,22 @@
     ./kitty.nix
   ];
 
+  xdg.configFile."xkb/symbols/us_qwerty-fr".source =
+    "${pkgs.callPackage ./../system/qwerty-fr.nix {}}"
+    + "/usr/share/X11/xkb/symbols/us_qwerty-fr";
   home = {
     inherit username;
     homeDirectory = "/home/${username}";
 
+    #keyboard = null; # using custom layout
+
     stateVersion = "24.05";
-    sessionVariables = {
-      EDITOR = "nvim";
-    };
+    sessionVariables.EDITOR = "nvim";
 
     packages = with pkgs; [
       # settings
       arandr
       brightnessctl
-
-      # volume
-      pavucontrol
 
       # messaging
       discord
@@ -47,42 +50,45 @@
 
       # dev
       lazygit
-      tokei
-      wakatime
-      zathura
-      vscode
-      lsps.ecsls.packages.${pkgs.system}.ecsls
-
       llvmPackages_19.clang-tools
+      ecsls.packages.${pkgs.system}.ecsls
+      ehcsls.packages.${pkgs.system}.ehcsls
+      nix-output-monitor
       nodejs
+      tokei
+      vscode
+      wakatime
+
+      # browsers
+      firefox
+
+
 
       # misc
+    ] ++ (if osConfig.services.pipewire.enable then [
       spotify
+      pamixer
+      pavucontrol
+    ] else [ ]) ++ [
+      gimp
       neofetch
       pass
 
       # utils
+      dconf
+      filterpath
       peek
       ripgrep
-      dconf
+      unzip
       xclip
-      pamixer
-
-      # Game
-      prismlauncher
+      zip
+      picom
     ];
   };
 
   manual.manpages.enable = false;
   programs = {
     home-manager.enable = true;
-    tmux.enable = true;
-
-    bat = {
-      enable = true;
-      config.theme = "base16";
-    };
-
     dircolors.enable = true;
 
     direnv = {
