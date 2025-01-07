@@ -83,6 +83,9 @@
       xclip
       zip
       picom
+
+      rofi
+      wmctrl
     ];
   };
 

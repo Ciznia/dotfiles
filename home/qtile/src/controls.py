@@ -21,6 +21,7 @@ def toggle_keypad(id: int, state: bool):
     os.system(f"xinput {'enable' if not state else 'disable'} {id}")
 
 mod = "mod4"
+alt = "mod1"
 
 mouse = [
     Drag(
@@ -37,6 +38,8 @@ mouse = [
 ]
 
 keys = [
+    Key([alt], "Tab", lazy.spawn("rofi -show window")),
+    Key([alt], "F4", lazy.window.kill()),
     Key([mod], "v", lazy.spawn("kitty -e pulsemixer")),
     Key([mod], "h", lazy.spawn("kitty -e nmtui")),
     Key([mod, "shift"], "v", lazy.spawn("pavucontrol")),
@@ -53,7 +56,7 @@ keys = [
     Key([mod, "control"], "r", lazy.reload_config()),
     Key([mod, "control"], "q", lazy.shutdown()),
     Key([mod], "r", lazy.spawncmd()),
-    Key([mod], "p", lazy.function(toggle_keypad)),
+    Key([mod], "XF86TouchpadToggle", lazy.function(toggle_keypad)),
     # Backlight
     Key([], "XF86MonBrightnessUp", lazy.spawn("brightnessctl set +5%")),
     Key([], "XF86MonBrightnessDown", lazy.spawn("brightnessctl set 5%-")),

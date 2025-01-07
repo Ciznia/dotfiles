@@ -8,7 +8,7 @@ from libqtile.layout.floating import Floating
 from libqtile.lazy import lazy
 
 from bar import Bar, widget_defaults
-from controls import mod, keys
+from controls import mod, alt, keys
 
 import colors
 
