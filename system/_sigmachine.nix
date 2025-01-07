@@ -8,16 +8,16 @@
   hardware.graphics = {
     enable = true;
 
-      extraPackages = with pkgs; [
-        amdvlk
-        intel-media-driver
-        libvdpau-va-gl
-        nvidia-vaapi-driver
-        vaapiIntel
-        vaapiVdpau
-        vulkan-validation-layers
-        mesa.drivers
-      ];
+    extraPackages = with pkgs; [
+      amdvlk
+      intel-media-driver
+      libvdpau-va-gl
+      nvidia-vaapi-driver
+      vaapiIntel
+      vaapiVdpau
+      vulkan-validation-layers
+      mesa.drivers
+    ];
   };
 
   services.xserver.videoDrivers = [ "nvidia" ];

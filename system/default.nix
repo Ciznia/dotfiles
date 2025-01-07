@@ -77,10 +77,6 @@
     ];
   };
 
-  hardware = {
-    pulseaudio.enable = false;
-  };
-
   programs = {
     command-not-found.enable = false;
     dconf.enable = true;
@@ -102,6 +98,7 @@
 
   security.rtkit.enable = true;
   services = {
+    pulseaudio.enable = false;
     auto-cpufreq = {
       enable = true;
       settings = {

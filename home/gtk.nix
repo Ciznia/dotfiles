@@ -9,13 +9,16 @@
     };
   };
 
+  catppuccin = {
+    gtk = {
+      enable = true;
+      tweaks = [ "rimless" ];
+      size = "compact";
+    };
+  };
+
   gtk = {
     enable = true;
-    catppuccin = {
-      enable = true;
-      size = "compact";
-      tweaks = [ "rimless" ];
-    };
 
     cursorTheme = {
       name = "Catppuccin-Macchiato-Dark";

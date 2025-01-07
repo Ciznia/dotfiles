@@ -110,18 +110,20 @@
       let
         nhw-mod = nixos-hardware.nixosModules;
 
-        mk-base-paths = hostname: let
-          key = pkgs.lib.toLower hostname;
-        in [
+        mk-base-paths = hostname:
+          let
+            key = pkgs.lib.toLower hostname;
+          in
+          [
             ./system/_${key}.nix
             ./hardware/${key}.hardware-configuration.nix
-        ];
+          ];
 
 
         mk-system = hostname: specific-modules:
           nixpkgs.lib.nixosSystem {
             specialArgs = {
-              inherit catppuccin username pkgs;
+              inherit catppuccin username;
             };
 
             modules = [ ./system ] ++ (mk-base-paths hostname) ++ [
