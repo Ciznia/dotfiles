@@ -58,6 +58,8 @@
       tokei
       vscode
       wakatime
+      sqlite
+      insomnia
 
       # browsers
       firefox
@@ -83,6 +85,7 @@
       xclip
       zip
       picom
+      speedtest
 
       rofi
       wmctrl
