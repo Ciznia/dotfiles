@@ -13,7 +13,6 @@
     consoleLogLevel = 0;
     initrd.verbose = false;
 
-    kernelPackages = pkgs.linuxKernel.packages.linux_6_6;
     loader = {
       efi.canTouchEfiVariables = true;
       grub = {

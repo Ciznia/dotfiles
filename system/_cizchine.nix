@@ -2,6 +2,10 @@
   boot.loader.grub.gfxmodeEfi = lib.mkForce "1920x1200x32";
 
   hardware = {
+    bluetooth = {
+      enable = true;
+      powerOnBoot = true;
+    };
     graphics = {
       enable = true;
       extraPackages = with pkgs; [
@@ -12,7 +16,7 @@
         vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
         vaapiVdpau
         vulkan-validation-layers
-        mesa.drivers
+        mesa
       ];
     };
 
@@ -35,6 +39,7 @@
   };
 
   services.xserver.videoDrivers = [ "nvidia" ];
+  services.blueman.enable = true;
 
   system = {
     copySystemConfiguration = false;

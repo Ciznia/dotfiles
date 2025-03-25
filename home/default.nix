@@ -54,6 +54,7 @@
       ecsls.packages.${pkgs.system}.ecsls
       ehcsls.packages.${pkgs.system}.ehcsls
       nix-output-monitor
+      valgrind
       nodejs
       tokei
       vscode
@@ -63,6 +64,10 @@
 
       # browsers
       firefox
+
+      # game
+      xclicker
+      prismlauncher
 
 
 
