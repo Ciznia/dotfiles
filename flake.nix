@@ -66,7 +66,6 @@
 
       home-manager-config = {
         home-manager = {
-          useGlobalPkgs = true;
           useUserPackages = true;
           users.${username}.imports = [
             catppuccin.homeManagerModules.catppuccin
