@@ -68,7 +68,9 @@
       # game
       xclicker
       prismlauncher
-
+      gnome-mahjongg
+      gnome-mines
+      gnome-sudoku
 
 
       # misc

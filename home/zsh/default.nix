@@ -42,7 +42,7 @@
       lz = "lazygit";
       ufda = "echo 'use flake' | tee .envrc && direnv allow";
       cd = "z";
-      ep  = "docker run -it --rm -v $(pwd):/home/project -w /home/project epitechcontent/epitest-docker:latest /bin/bash";
+      ep = "docker run -it --rm -v $(pwd):/home/project -w /home/project epitechcontent/epitest-docker:latest /bin/bash";
       prismlauncher = "nvidia-offload prismlauncher";
       cs = "nix run github:Sigmapitech/cs";
     };
@@ -56,6 +56,7 @@
       plugins = [
         "git"
         "ssh-agent"
+        "command-not-found"
       ];
     };
   };
