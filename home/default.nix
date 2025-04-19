@@ -1,4 +1,4 @@
-{ pkgs, username, osConfig, ecsls, ehcsls, ... }:
+{ pkgs, username, osConfig, ecsls, ehcsls, lib, ... }:
 {
   nixpkgs.config.allowUnfree = true;
 
@@ -34,11 +34,12 @@
     inherit username;
     homeDirectory = "/home/${username}";
 
-    #keyboard = null; # using custom layout
-
     stateVersion = "24.05";
     sessionVariables.EDITOR = "nvim";
-
+    file.".vscode-server/server-env-setup".text = ''
+      export PATH=$PATH:${lib.makeBinPath [ pkgs.wget ]}
+      export EDITOR="code --wait"
+    '';
     packages = with pkgs; [
       # settings
       arandr

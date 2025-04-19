@@ -42,6 +42,12 @@
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    wsl-nixos = {
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+      };
+      url = "github:nix-community/NixOS-WSL";
+    };
   };
 
   outputs =
@@ -53,6 +59,7 @@
     , ecsls
     , ehcsls
     , catppuccin
+    , wsl-nixos
     , ...
     }:
     let
@@ -155,6 +162,22 @@
             common-cpu-intel
             common-pc-ssd
           ]);
+
+	  WSL = nixpkgs.lib.nixosSystem {
+            specialArgs = {
+              inherit catppuccin username;
+            };
+
+            modules = [ ./configuration.nix ] ++ [
+              { networking.hostName = "WSL"; }
+              { nixpkgs.hostPlatform = system; }
+            ] ++ [
+	            wsl-nixos.nixosModules.wsl
+              catppuccin.nixosModules.catppuccin
+              home-manager.nixosModules.home-manager
+              home-manager-config
+            ];
+          };
         };
       }
     );
