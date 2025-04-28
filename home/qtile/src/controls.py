@@ -38,7 +38,7 @@ mouse = [
 ]
 
 keys = [
-    Key([alt], "Tab", lazy.spawn("rofi -show window")),
+    Key([alt], "Tab", lazy.spawn("rofi -show window --show-icons")),
     Key([alt], "F4", lazy.window.kill()),
     Key([mod], "v", lazy.spawn("kitty -e pulsemixer")),
     Key([mod], "h", lazy.spawn("kitty -e nmtui")),

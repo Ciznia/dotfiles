@@ -112,6 +112,12 @@ Memory = mk_overrides(
     },
 )
 
+
+CPUTemp = mk_overrides(
+    widget.ThermalZone, zone="/sys/class/thermal/thermal_zone5/temp", high=70,
+    crit=95, update_interval=1
+)
+
 TaskList = mk_overrides(
     widget.TaskList,
     icon_size=0,
@@ -166,6 +172,7 @@ class Bar(bar.Bar):
         Memory,
         MemoryGraph,
         CPUGraph,
+        CPUTemp,
         Separator,
         widget.Volume,
         Clock,

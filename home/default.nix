@@ -54,6 +54,10 @@
       llvmPackages_19.clang-tools
       ecsls.packages.${pkgs.system}.ecsls
       ehcsls.packages.${pkgs.system}.ehcsls
+      (pkgs.callPackage ./nvim/ghcup.nix { })
+      haskell.compiler.ghc984
+      haskell.packages.ghc984.haskell-language-server
+      stack
       nix-output-monitor
       valgrind
       nodejs
