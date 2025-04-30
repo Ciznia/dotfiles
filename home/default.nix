@@ -66,6 +66,7 @@
       wakatime
       sqlite
       insomnia
+      nix-index
 
       # browsers
       firefox

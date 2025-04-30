@@ -45,6 +45,9 @@
       ep = "docker run -it --rm -v $(pwd):/home/project -w /home/project epitechcontent/epitest-docker:latest /bin/bash";
       prismlauncher = "nvidia-offload prismlauncher";
       cs = "nix run github:Sigmapitech/cs";
+      rebuild = "sudo ls > /dev/null; \
+        sudo nixos-rebuild switch --flake ~/dotfiles -v --log-format internal-json |& nom --json";
+      update = "sudo ls > /dev/null; cd ~/dotfiles && nix flake update && rebuild; cd -";
     };
 
     oh-my-zsh = {
