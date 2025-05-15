@@ -36,10 +36,13 @@
 
     stateVersion = "24.05";
     sessionVariables.EDITOR = "nvim";
-    file.".vscode-server/server-env-setup".text = ''
-      export PATH=$PATH:${lib.makeBinPath [ pkgs.wget ]}
-      export EDITOR="code --wait"
-    '';
+    file = {
+      ".vscode-server/server-env-setup".text = ''
+        export PATH=$PATH:${lib.makeBinPath [ pkgs.wget ]}
+        export EDITOR="code --wait"
+      '';
+    };
+
     packages = with pkgs; [
       # settings
       arandr
@@ -67,6 +70,7 @@
       sqlite
       insomnia
       nix-index
+      oh-my-posh
 
       # browsers
       firefox

@@ -6,6 +6,9 @@
     enableCompletion = true;
     syntaxHighlighting.enable = true;
 
+    initContent = ''
+      eval "$(oh-my-posh init zsh --config ~/.poshthemes/atomic.omp.json)"
+    '';
     plugins = [
       {
         name = "zsh-syntax-highlighting";

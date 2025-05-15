@@ -8,8 +8,8 @@
     };
 
     font = {
-      name = "JetbrainsMono Nerd Font";
-      size = 9;
+      name = "MesloLGS Nerd Font Mono";
+      size = 12;
     };
 
     settings = {
