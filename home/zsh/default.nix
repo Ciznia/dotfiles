@@ -7,7 +7,9 @@
     syntaxHighlighting.enable = true;
 
     initContent = ''
-      eval "$(oh-my-posh init zsh --config ~/.poshthemes/atomic.omp.json)"
+      if [[ $TERM != "linux" ]]; then
+        eval "$(oh-my-posh init zsh --config ~/.poshthemes/atomic.omp.json)"
+      fi
     '';
     plugins = [
       {
