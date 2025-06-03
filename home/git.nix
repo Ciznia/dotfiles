@@ -15,12 +15,12 @@
           insteadOf = "https://github.com/";
         };
       };
+      push.autoSetupRemote = "true";
     };
 
     ignores = [
       # Project config file
       ".fast"
-      "ecsls.toml"
       ".pre-commit-config.yaml"
       "compile_commands.json"
 
@@ -31,6 +31,7 @@
 
       # Python
       "venv"
+      "__pycache__"
       # Locked Files
       "*~"
       "#*#"
@@ -38,7 +39,8 @@
       ".DS_Store"
       # Direnv
       ".direnv"
-      ".envrc"
+      ".*env*"
+      "venv"
       # Nix buid
       "result"
       # IDE Folders

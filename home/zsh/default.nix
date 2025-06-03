@@ -7,7 +7,9 @@
     syntaxHighlighting.enable = true;
 
     initContent = ''
-      eval "$(oh-my-posh init zsh --config ~/.poshthemes/atomic.omp.json)"
+      if [[ $TERM != "linux" ]]; then
+        eval "$(oh-my-posh init zsh --config ~/.poshthemes/atomic.omp.json)"
+      fi
     '';
     plugins = [
       {
@@ -47,7 +49,7 @@
       cd = "z";
       ep = "docker run -it --rm -v $(pwd):/home/project -w /home/project epitechcontent/epitest-docker:latest /bin/bash";
       prismlauncher = "nvidia-offload prismlauncher";
-      cs = "nix run github:Sigmapitech/cs";
+      cs = "nix run github:Sigmapitech/cs -- --ecsls --use-gitignore";
       rebuild = "sudo ls > /dev/null; \
         sudo nixos-rebuild switch --flake ~/dotfiles -v --log-format internal-json |& nom --json";
       update = "sudo ls > /dev/null; cd ~/dotfiles && nix flake update && rebuild; cd -";
