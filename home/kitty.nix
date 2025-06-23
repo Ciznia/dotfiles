@@ -9,7 +9,7 @@
 
     font = {
       name = "MesloLGS Nerd Font Mono";
-      size = 12;
+      size = 9;
     };
 
     settings = {

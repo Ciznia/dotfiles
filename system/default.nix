@@ -132,7 +132,11 @@
       alsa.support32Bit = true;
       pulse.enable = true;
     };
-
+    # displayManager.sddm = {
+    #  enable = true;
+    #  autoNumlock = true;
+    #  package = pkgs.kdePackages.sddm;
+    # };
     xserver = {
       enable = true;
       displayManager.startx.enable = true;
