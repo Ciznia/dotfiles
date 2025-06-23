@@ -71,6 +71,7 @@
       insomnia
       nix-index
       oh-my-posh
+      pre-commit
 
       # browsers
       firefox
@@ -81,6 +82,9 @@
       gnome-mahjongg
       gnome-mines
       gnome-sudoku
+      lutris
+      steam
+      wine
 
 
       # misc
