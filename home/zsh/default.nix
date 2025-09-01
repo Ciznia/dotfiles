@@ -6,9 +6,9 @@
     enableCompletion = true;
     syntaxHighlighting.enable = true;
 
-    initContent = ''
-      eval "$(oh-my-posh init zsh --config ~/.poshthemes/atomic.omp.json)"
-    '';
+    # initContent = ''
+    #   eval "$(oh-my-posh init zsh --config ~/.poshthemes/atomic.omp.json)"
+    # '';
     plugins = [
       {
         name = "zsh-syntax-highlighting";
@@ -48,9 +48,14 @@
       ep = "docker run -it --rm -v $(pwd):/home/project -w /home/project epitechcontent/epitest-docker:latest /bin/bash";
       prismlauncher = "nvidia-offload prismlauncher";
       cs = "nix run github:Sigmapitech/cs";
-      rebuild = "sudo ls > /dev/null; \
-        sudo nixos-rebuild switch --flake ~/dotfiles -v --log-format internal-json |& nom --json";
-      update = "sudo ls > /dev/null; cd ~/dotfiles && nix flake update && rebuild; cd -";
+      rebuild = "nix-shell -p nvd nix-output-monitor --run '
+        nixos-rebuild build -v       \
+          --flake ~/repos/dotfiles   \
+          --log-format internal-json \
+        |& nom --json;
+        nvd diff /run/current-system result;
+        sudo ./result/bin/switch-to-configuration switch'";
+      update = "cd ~/dotfiles && nix flake update && rebuild; cd -";
     };
 
     oh-my-zsh = {

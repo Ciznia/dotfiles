@@ -9,27 +9,27 @@
     };
   };
 
-  catppuccin = {
-    gtk = {
-      enable = true;
-      tweaks = [ "rimless" ];
-      size = "compact";
-    };
-  };
+  # catppuccin = {
+  #   gtk = {
+  #     enable = true;
+  #     tweaks = [ "rimless" ];
+  #     size = "compact";
+  #   };
+  # };
 
-  gtk = {
-    enable = true;
+  # gtk = {
+  #   enable = true;
 
-    cursorTheme = {
-      name = "Catppuccin-Macchiato-Dark";
-      package = pkgs.catppuccin-cursors.macchiatoDark;
-    };
+  #   cursorTheme = {
+  #     name = "Catppuccin-Macchiato-Dark";
+  #     package = pkgs.catppuccin-cursors.macchiatoDark;
+  #   };
 
-    iconTheme = {
-      name = "Papirus-Dark";
-      package = pkgs.papirus-icon-theme;
-    };
-  };
+  #   iconTheme = {
+  #     name = "Papirus-Dark";
+  #     package = pkgs.papirus-icon-theme;
+  #   };
+  # };
 
   qt = {
     enable = true;

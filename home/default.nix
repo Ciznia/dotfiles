@@ -72,6 +72,9 @@
       nix-index
       oh-my-posh
 
+      nixpkgs-fmt
+      nil
+
       # browsers
       firefox
 
