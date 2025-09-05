@@ -168,7 +168,7 @@
               inherit catppuccin username;
             };
 
-            modules = [ ./configuration.nix ] ++ [
+            modules = [ ./wsl.nix ] ++ [
               { networking.hostName = "WSL"; }
               { nixpkgs.hostPlatform = system; }
             ] ++ [
