@@ -49,9 +49,9 @@
       prismlauncher = "nvidia-offload prismlauncher";
       cs = "nix run github:Sigmapitech/cs";
       rebuild = "nix-shell -p nvd nix-output-monitor --run '
-        nixos-rebuild build -v       \
-          --flake ~/repos/dotfiles   \
-          --log-format internal-json \
+        nixos-rebuild build          \\
+          --flake ~/dotfiles         \\
+          --log-format internal-json \\
         |& nom --json;
         nvd diff /run/current-system result;
         sudo ./result/bin/switch-to-configuration switch'";
