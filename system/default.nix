@@ -96,6 +96,7 @@
     steam.enable = true;
     thunderbird.enable = true;
     zsh.enable = true;
+    sway.enable = true;
   };
 
   security.rtkit.enable = true;
@@ -212,7 +213,7 @@
       enable = true;
       package = pkgs.docker;
     };
-
+    waydroid.enable = true;
     libvirtd.enable = true;
   };
 
