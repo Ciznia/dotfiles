@@ -18,6 +18,7 @@
     ./picom
     ./qtile
     ./zsh
+    ./kubernetes
 
     ./cursor.nix
     ./extra_files.nix
@@ -53,27 +54,35 @@
       teams-for-linux
 
       # dev
+      vscode
       lazygit
+      insomnia
+      oh-my-posh
+      tokei
+      wakatime
+
+      kubectl
+      minikube
+
+      sqlite
+
       llvmPackages_19.clang-tools
       ecsls.packages.${pkgs.system}.ecsls
+      valgrind
+
       ehcsls.packages.${pkgs.system}.ehcsls
       (pkgs.callPackage ./nvim/ghcup.nix { })
       haskell.compiler.ghc984
       haskell.packages.ghc984.haskell-language-server
       stack
-      nix-output-monitor
-      valgrind
+
       nodejs
-      tokei
-      vscode
-      wakatime
-      sqlite
-      insomnia
-      nix-index
-      oh-my-posh
 
       nixpkgs-fmt
+      nix-index
       nil
+      nix-output-monitor
+
 
       # browsers
       firefox
