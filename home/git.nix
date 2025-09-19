@@ -15,6 +15,9 @@
           insteadOf = "https://github.com/";
         };
       };
+      push = {
+        autoSetupRemote = true;
+      };
     };
 
     ignores = [
@@ -31,15 +34,26 @@
 
       # Python
       "venv"
+      "__pycache__"
+      # Web
+      "node_modules"
+      "dist"
+      "build"
+      "out"
+      ".vite"
+      ".next"
+      ".cursor"
+      # Direnv
+      ".direnv"
+      ".envrc"
+      # Environment files
+      "*env*"
       # Locked Files
       "*~"
       "#*#"
       # Mac folder
       ".DS_Store"
-      # Direnv
-      ".direnv"
-      ".envrc"
-      # Nix buid
+      # Nix build
       "result"
       # IDE Folders
       ".idea"
