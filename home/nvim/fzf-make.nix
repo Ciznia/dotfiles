@@ -21,8 +21,6 @@ rustPlatform.buildRustPackage rec {
 
   cargoHash = "sha256-nrttuY9x61aE3RJOtbUWZbqOX6ZRyghQSruu5EdX470=";
 
-  useFetchCargoVendor = true;
-
   nativeBuildInputs = [ makeBinaryWrapper ];
 
   patches = [ ./fix-syntax-higlighting.patch ];

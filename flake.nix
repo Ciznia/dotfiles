@@ -19,16 +19,7 @@
       repo = "nix";
     };
 
-    ecsls = {
-      url = "github:Sigmapitech/ecsls";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        utils.follows = "flake-utils";
-        # Cannot use nested vera-clang.inputs.nixpkgs.follows
-        # See https://github.com/NixOS/nix/issues/5790
-        vera-clang.follows = "vera-clang";
-      };
-    };
+    ecsls.url = "github:Sigmapitech/ecsls";
 
     ehcsls.url = "github:Sigmapitech/ehcsls";
     nixos-hardware.url = "github:NixOS/nixos-hardware";
@@ -75,7 +66,7 @@
         home-manager = {
           useUserPackages = true;
           users.${username}.imports = [
-            catppuccin.homeManagerModules.catppuccin
+            catppuccin.homeModules.catppuccin
             ./home
           ];
 
