@@ -3,9 +3,12 @@
   programs.git = {
     enable = true;
     userName = "Ciznia";
-    userEmail = "gabriel.hosquet" + "@" + "epitech.eu";
+    userEmail = "hosquetgabriel@gmail.com";
 
     extraConfig = {
+      gpg.program = "gpg";
+      user.signingKey = "570F6CA11CFD8949";
+      commit.gpgSign = true;
       init = {
         defaultBranch = "main";
       };
