@@ -19,6 +19,7 @@
     ./qtile
     ./zsh
     ./kubernetes
+    ./gpg
 
     ./cursor.nix
     ./extra_files.nix
