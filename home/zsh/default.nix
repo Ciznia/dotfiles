@@ -6,9 +6,9 @@
     enableCompletion = true;
     syntaxHighlighting.enable = true;
 
-    # initContent = ''
-    #   eval "$(oh-my-posh init zsh --config ~/.poshthemes/atomic.omp.json)"
-    # '';
+    initContent = ''
+      eval "$(oh-my-posh init zsh --config ~/extra/posh/themes/atomic.omp.json)"
+    '';
     plugins = [
       {
         name = "zsh-syntax-highlighting";
@@ -75,5 +75,9 @@
   home.file.omz_zsh_theme = {
     source = ./sigma.zsh-theme;
     target = "extra/zsh/themes/sigma.zsh-theme";
+  };
+  home.file.oh-my-posh_theme = {
+    source = ./atomic.omp.json;
+    target = "extra/posh/themes/atomic.omp.json";
   };
 }

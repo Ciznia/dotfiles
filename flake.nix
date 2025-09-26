@@ -7,10 +7,6 @@
 
     vera-clang = {
       url = "github:Sigmapitech/vera-clang";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-      };
     };
 
     catppuccin = {

@@ -60,6 +60,9 @@
       oh-my-posh
       tokei
       wakatime
+      nixpkgs-fmt
+      nixpkgs-review
+      jq
 
       kubectl
       minikube
