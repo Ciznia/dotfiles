@@ -45,6 +45,9 @@
   networking = {
     networkmanager.enable = true;
     firewall.enable = false;
+    extraHosts = ''
+      192.168.49.2 poll.dop.io result.dop.io
+    '';
   };
 
   time = {
