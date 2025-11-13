@@ -1,4 +1,4 @@
-{ username, pkgs, ... }:
+{ username, pkgs, lib, ... }:
 {
   imports = [
     ./polkit.nix
@@ -15,7 +15,7 @@
 
     loader = {
       efi.canTouchEfiVariables = true;
-      grub = {
+      grub = lib.mkDefault {
         enable = true;
         efiSupport = true;
         device = "nodev";
@@ -171,7 +171,7 @@
     nerd-fonts.jetbrains-mono
     noto-fonts
     noto-fonts-cjk-sans
-    noto-fonts-emoji
+    noto-fonts-color-emoji
     proggyfonts
   ];
 

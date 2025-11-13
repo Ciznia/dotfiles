@@ -106,11 +106,13 @@
         mk-base-paths = hostname:
           let
             key = pkgs.lib.toLower hostname;
+            base = [
+              ./system/_${key}.nix
+              ./hardware/${key}.hardware-configuration.nix
+            ];
           in
-          [
-            ./system/_${key}.nix
-            ./hardware/${key}.hardware-configuration.nix
-          ];
+          builtins.filter builtins.pathExists base;
+
 
 
         mk-system = hostname: specific-modules:
@@ -150,21 +152,26 @@
             common-pc-ssd
           ]);
 
-	  WSL = nixpkgs.lib.nixosSystem {
-            specialArgs = {
-              inherit catppuccin username;
-            };
+          WSL = mk-system "WSL" [
+            wsl-nixos.nixosModules.wsl
+            ./configuration.nix
+          ];
 
-            modules = [ ./configuration.nix ] ++ [
-              { networking.hostName = "WSL"; }
-              { nixpkgs.hostPlatform = system; }
-            ] ++ [
-	            wsl-nixos.nixosModules.wsl
-              catppuccin.nixosModules.catppuccin
-              home-manager.nixosModules.home-manager
-              home-manager-config
-            ];
-          };
+          # WSL = nixpkgs.lib.nixosSystem {
+          #   specialArgs = {
+          #     inherit catppuccin username;
+          #   };
+
+          #   modules = [ ./configuration.nix ] ++ [
+          #     { networking.hostName = "WSL"; }
+          #     { nixpkgs.hostPlatform = system; }
+          #   ] ++ [
+          #     wsl-nixos.nixosModules.wsl
+          #     catppuccin.nixosModules.catppuccin
+          #     home-manager.nixosModules.home-manager
+          #     home-manager-config
+          #   ];
+          # };
         };
       }
     );

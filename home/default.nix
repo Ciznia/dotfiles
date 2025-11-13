@@ -60,7 +60,7 @@
       insomnia
       oh-my-posh
       tokei
-      wakatime
+      wakatime-cli
       nixpkgs-fmt
       nixpkgs-review
       jq

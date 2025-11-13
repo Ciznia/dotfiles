@@ -31,8 +31,6 @@
       { src = "${pkgs.gzip}/bin/gzip"; }
     ];
   };
-  programs.zsh.enable = true;
-  users.users.ciznia.shell = pkgs.zsh;
   programs.dconf.enable = true;
   services.resolved.extraConfig = builtins.readFile ./resolv.conf;
   programs.nix-ld = {
