@@ -156,22 +156,11 @@
             wsl-nixos.nixosModules.wsl
             ./configuration.nix
           ];
-
-          # WSL = nixpkgs.lib.nixosSystem {
-          #   specialArgs = {
-          #     inherit catppuccin username;
-          #   };
-
-          #   modules = [ ./configuration.nix ] ++ [
-          #     { networking.hostName = "WSL"; }
-          #     { nixpkgs.hostPlatform = system; }
-          #   ] ++ [
-          #     wsl-nixos.nixosModules.wsl
-          #     catppuccin.nixosModules.catppuccin
-          #     home-manager.nixosModules.home-manager
-          #     home-manager-config
-          #   ];
-          # };
+          Cizchine-temp = mk-system "Cizchine-temp" (with nhw-mod; [
+            common-pc-laptop
+            common-cpu-intel
+            common-pc-ssd
+          ]);
         };
       }
     );
