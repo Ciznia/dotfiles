@@ -40,7 +40,7 @@
       ecsls-pkg
       ehcsls-pkg
       haskell-language-server
-      (pkgs.callPackage ./fzf-make.nix { })
+      # (pkgs.callPackage ./fzf-make.nix { })
     ];
   };
 }

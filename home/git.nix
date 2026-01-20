@@ -2,12 +2,14 @@
 {
   programs.git = {
     enable = true;
-    userName = "Ciznia";
-    userEmail = "hosquetgabriel@gmail.com";
 
-    extraConfig = {
+    settings = {
       gpg.program = "gpg";
-      user.signingKey = "570F6CA11CFD8949";
+      user = {
+        signingKey = "570F6CA11CFD8949";
+        name = "Ciznia";
+        email = "hosquetgabriel@gmail.com";
+      };
       commit.gpgSign = true;
       init = {
         defaultBranch = "main";

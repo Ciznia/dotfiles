@@ -76,9 +76,6 @@
 
       ehcsls.packages.${pkgs.system}.ehcsls
       (pkgs.callPackage ./nvim/ghcup.nix { })
-      haskell.compiler.ghc984
-      haskell.packages.ghc984.haskell-language-server
-      stack
 
       nodejs
 
