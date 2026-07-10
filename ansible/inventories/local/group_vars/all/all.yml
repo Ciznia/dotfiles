@@ -1,0 +1,15 @@
+---
+# ─────────────────────────────────────────────────────────────
+# Non-secret configuration — safe to commit in plaintext.
+# Secrets live alongside in all.vault.yml (vault_* names), encrypted.
+# Both auto-load from this inventory's group_vars/all/.
+# ─────────────────────────────────────────────────────────────
+
+# --- SSH -------------------------------------------------------
+ssh_key_type: ed25519
+ssh_private_key_path: "{{ ansible_facts.env.HOME }}/.ssh/id_{{ ssh_key_type }}"
+
+ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM9z8Dn3x4q+5O65wSAX3IzRckHoR7eMgNSMpQzv7hxC hosquetgabriel@gmail.com"
+
+# --- GPG -------------------------------------------------------
+gpg_email: "hosquetgabriel@gmail.com"
