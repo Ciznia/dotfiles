@@ -1,0 +1,18 @@
+---
+# Restore the shared identity onto this machine:
+#   keys  → SSH private/public key + GPG secret key (rotation-aware)
+#   pass  → re-encrypt the password store when the GPG key changed
+#
+# Roles run in order, so a full apply rotates the key and then follows up with
+# the store. Run subsets with tags:
+#   --tags ssh    SSH only
+#   --tags gpg    GPG import + pass re-encrypt (rotation, end to end)
+#   --tags pass   pass re-encrypt only
+#   --tags keys   SSH + GPG, no pass
+- name: Provision local user identity (SSH, GPG, password store)
+  hosts: localhost
+  gather_facts: true
+  roles:
+    - role: keys
+    - role: pass
+      tags: [pass, gpg]
