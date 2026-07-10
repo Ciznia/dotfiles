@@ -1,0 +1,37 @@
+---
+# Rotation-aware: compare the vaulted key's fingerprint against what's in the
+# keyring and (re)import only when they differ. Covers first install AND
+# rotation to a new key for the same identity.
+- name: Inspect the vaulted GPG key without importing it
+  ansible.builtin.command: gpg --import --import-options show-only --with-colons
+  args:
+    stdin: "{{ vault_gpg_private_key }}"
+  register: gpg_vault_show
+  changed_when: false
+  no_log: true
+
+- name: Inspect the GPG secret key currently in the keyring
+  ansible.builtin.command: gpg --list-secret-keys --with-colons {{ gpg_email }}
+  register: gpg_host_show
+  changed_when: false
+  failed_when: false
+
+- name: Determine the vaulted vs. installed fingerprints
+  ansible.builtin.set_fact:
+    gpg_vault_fpr: "{{ gpg_vault_show.stdout | regex_findall('^fpr:+([0-9A-F]+)', multiline=true) | first | default('') }}"
+    gpg_host_fpr: "{{ gpg_host_show.stdout | regex_findall('^fpr:+([0-9A-F]+)', multiline=true) | first | default('') }}"
+
+- name: Import / rotate the GPG secret key from vault
+  ansible.builtin.command: gpg --batch --import
+  args:
+    stdin: "{{ vault_gpg_private_key }}"
+  when: gpg_vault_fpr != gpg_host_fpr
+  register: gpg_import
+  no_log: true
+
+- name: Mark the imported key as ultimately trusted
+  ansible.builtin.command: gpg --import-ownertrust
+  args:
+    stdin: "{{ gpg_vault_fpr }}:6:\n"
+  when: gpg_import is changed
+  changed_when: true

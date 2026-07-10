@@ -1,0 +1,15 @@
+---
+# The `keys` role restores the shared identity. Tasks are split per concern
+# and tagged so you can apply a subset, e.g. `--tags ssh` or `--tags gpg`.
+- name: SSH key material
+  ansible.builtin.import_tasks: ssh.yml
+  tags: [keys, ssh]
+
+- name: GPG key material
+  ansible.builtin.import_tasks: gpg.yml
+  tags: [keys, gpg]
+
+# `never` ⇒ skipped by normal/full runs; fires only on `--tags agent`.
+- name: Load the SSH key into the agent (startup)
+  ansible.builtin.import_tasks: agent.yml
+  tags: [never, agent]

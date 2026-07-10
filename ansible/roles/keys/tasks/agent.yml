@@ -1,0 +1,83 @@
+---
+# Load the SSH key into the running ssh-agent using the passphrase from the
+# vault, so nothing is typed interactively. Meant to run at session startup:
+#   ansible-playbook ansible/playbooks/keys.yml --tags agent
+#
+# The importing task tags this file [never, agent], so a normal provisioning
+# run skips it entirely — it only fires when you ask for `agent` explicitly.
+#
+# Requires a reachable agent: SSH_AUTH_SOCK must be set in the environment that
+# launches ansible (your session / the systemd user service that runs this).
+- name: Read the SSH key fingerprint
+  ansible.builtin.command: ssh-keygen -lf {{ ssh_private_key_path }}.pub
+  register: ssh_key_fpr
+  changed_when: false
+
+- name: List identities currently in the agent
+  ansible.builtin.command: ssh-add -l
+  register: ssh_add_list
+  changed_when: false
+  failed_when: false  # rc 1 = agent empty, rc 2 = no agent (handled below)
+
+- name: Require a reachable ssh-agent
+  ansible.builtin.assert:
+    that: ssh_add_list.rc != 2
+    fail_msg: >-
+      No ssh-agent reachable — is SSH_AUTH_SOCK set in this session?
+    quiet: true
+
+# Idempotent: the key's SHA256 fingerprint (2nd field of ssh-keygen output)
+# already appears in `ssh-add -l` ⇒ it's loaded ⇒ skip the whole block.
+- name: Load the key into the agent
+  when: ssh_key_fpr.stdout.split()[1] not in ssh_add_list.stdout
+  block:
+    - name: Write a throwaway askpass helper (reads the passphrase from env)
+      ansible.builtin.copy:
+        dest: "{{ ssh_askpass_path }}"
+        mode: "0700"
+        content: |
+          #!/usr/bin/env bash
+          printf '%s' "$SSH_PASSPHRASE"
+
+    - name: ssh-add using the vault passphrase
+      ansible.builtin.command: ssh-add {{ ssh_private_key_path }}
+      environment:
+        SSH_ASKPASS: "{{ ssh_askpass_path }}"
+        SSH_ASKPASS_REQUIRE: force
+        SSH_PASSPHRASE: "{{ vault_ssh_passphrase }}"
+      no_log: true
+      changed_when: true
+  always:
+    - name: Remove the askpass helper
+      ansible.builtin.file:
+        path: "{{ ssh_askpass_path }}"
+        state: absent
+
+# ── GPG: preload the key passphrase into gpg-agent ────────────────────
+# Same idea as ssh-add above: feed the agent the vault passphrase so it's
+# never typed. gpg-preset-passphrase warms the cache for each keygrip.
+# Requires `allow-preset-passphrase` in gpg-agent.conf (handled later in the
+# NixOS agent config) — the preset errors without it.
+- name: Locate gpg-preset-passphrase
+  ansible.builtin.command: gpgconf --list-dirs libexecdir
+  register: gpg_libexec
+  changed_when: false
+
+- name: Read the keygrips for the GPG identity
+  ansible.builtin.command: gpg --batch --with-colons --with-keygrip --list-secret-keys {{ gpg_email }}
+  register: gpg_keygrips
+  changed_when: false
+  failed_when: false
+
+# Preset every keygrip (primary + subkeys) so both signing and pass-decrypt
+# are unlocked. Re-presetting an already-cached key is a harmless refresh.
+- name: Preset the GPG passphrase into the agent
+  ansible.builtin.command: "{{ gpg_libexec.stdout }}/gpg-preset-passphrase --preset {{ item }}"
+  args:
+    stdin: "{{ vault_gpg_passphrase }}"
+  loop: "{{ gpg_keygrips.stdout | regex_findall('^grp:+([0-9A-F]+)', multiline=true) }}"
+  when:
+    - gpg_keygrips.rc == 0
+    - vault_gpg_passphrase is defined
+  no_log: true  # keep the passphrase out of the run output
+  changed_when: false

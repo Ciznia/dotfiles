@@ -1,0 +1,5 @@
+---
+# Throwaway askpass helper used by the `agent` tasks to feed ssh-add the vault
+# passphrase without a prompt. Written 0700 and removed immediately after use;
+# it holds no secret (it only echoes $SSH_PASSPHRASE from the environment).
+ssh_askpass_path: "{{ ansible_facts.env.HOME }}/.ssh/.ansible-askpass"
