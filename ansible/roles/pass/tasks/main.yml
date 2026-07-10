@@ -1,0 +1,40 @@
+---
+# Keep the pass(1) store encrypted to the *current* GPG identity. After the
+# `keys` role rotates the GPG key, this re-encrypts every entry to the new key
+# via `pass init`. Idempotent: it compares the store's .gpg-id to the live
+# fingerprint and only runs when they differ — so on a shared store the first
+# host re-encrypts and the rest (once synced) skip.
+#
+# Requires the store to have been initialized with the *fingerprint*
+# (`pass init <FPR>`), not the email — an email .gpg-id always resolves to the
+# newest key, which would hide a rotation.
+- name: Check for an initialized password store
+  ansible.builtin.stat:
+    path: "{{ password_store_dir }}/.gpg-id"
+  register: pass_store
+
+- name: Read the fingerprint the store is encrypted to
+  ansible.builtin.slurp:
+    src: "{{ password_store_dir }}/.gpg-id"
+  register: pass_gpg_id
+  when: pass_store.stat.exists
+
+- name: Read the current GPG fingerprint for the identity
+  ansible.builtin.command: gpg --list-secret-keys --with-colons {{ gpg_email }}
+  register: gpg_current_show
+  changed_when: false
+  failed_when: false
+  when: pass_store.stat.exists
+
+- name: Re-encrypt the store to the current key (pass init)
+  ansible.builtin.command: pass init {{ gpg_current_fpr }}
+  vars:
+    gpg_current_fpr: "{{ gpg_current_show.stdout | regex_findall('^fpr:+([0-9A-F]+)', multiline=true) | first | default('') }}"
+    store_gpg_id: "{{ (pass_gpg_id.content | b64decode).splitlines() | first | default('') | trim }}"
+  environment:
+    PASSWORD_STORE_DIR: "{{ password_store_dir }}"
+  when:
+    - pass_store.stat.exists
+    - gpg_current_fpr | length > 0
+    - store_gpg_id != gpg_current_fpr
+  changed_when: true
