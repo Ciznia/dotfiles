@@ -1,0 +1,36 @@
+---
+# ═══════════════════════════════════════════════════════════════
+# TEMPLATE. Ansible does NOT load this file (the .example suffix
+# excludes it from group_vars auto-loading) and it is NOT encrypted,
+# so never paste real keys here.
+#
+# Create the real, encrypted vault (from repo root) with:
+#     ansible-vault create ansible/inventories/local/group_vars/all/all.vault.yml
+# then paste the two keys below as literal '|' block scalars.
+# Edit later with:
+#     ansible-vault edit ansible/inventories/local/group_vars/all/all.vault.yml
+# The resulting all.vault.yml IS meant to be committed (encrypted at rest).
+# ═══════════════════════════════════════════════════════════════
+
+# Full OpenSSH private key, including BEGIN/END lines.
+#   cat ~/.ssh/id_ed25519
+vault_ssh_private_key: |
+  -----BEGIN OPENSSH PRIVATE KEY-----
+  ...paste...
+  -----END OPENSSH PRIVATE KEY-----
+
+# Passphrase protecting the SSH key above. Used by the `agent` tasks to run
+# ssh-add at session startup without prompting. Quote it to be safe.
+vault_ssh_passphrase: "…the ssh key passphrase…"
+
+# Armored GPG secret key.
+#   gpg --armor --export-secret-keys hosquetgabriel@gmail.com
+vault_gpg_private_key: |
+  -----BEGIN PGP PRIVATE KEY BLOCK-----
+  ...paste...
+  -----END PGP PRIVATE KEY BLOCK-----
+
+# Passphrase protecting the GPG key above. Preloaded into gpg-agent by the
+# `agent` tasks, so it's never typed. Can be a long random value (openssl
+# rand) since it lives here, not in your head. Quote it.
+vault_gpg_passphrase: "…the gpg key passphrase…"

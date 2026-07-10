@@ -1,0 +1,8 @@
+# Pin the Python interpreter explicitly for this host — without it, Ansible
+# falls back to interpreter discovery and prints a "future installation of
+# another Python interpreter could change the meaning of that path" warning
+# on every run. Scoped to host_vars (not group_vars/all) on purpose: this is
+# a localhost whose python3 isn't at a fixed FHS path, so we use
+# "{{ ansible_playbook_python }}", which resolves to whatever interpreter is
+# running ansible-playbook itself — the one `nix develop` puts on PATH.
+ansible_python_interpreter: "{{ ansible_playbook_python }}"
