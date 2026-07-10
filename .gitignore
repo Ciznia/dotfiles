@@ -1,0 +1,6 @@
+# Ansible vault password file — NEVER commit
+.vault_pass
+**/.vault_pass
+
+# Any decrypted secret spilled to disk
+*.decrypted
