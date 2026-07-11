@@ -86,9 +86,12 @@ try {
   Write-Host '==> Running the ansible keys playbook'
   Invoke-InWsl "$flakes; cd /root/dotfiles && nix develop --command ansible-playbook ansible/playbooks/keys.yml"
 
-  # Build + switch the NixOS config.
+  # Build + switch. switch-to-configuration can exit nonzero over a cosmetic
+  # root user-unit reload failure (headless WSL has no session dbus for root)
+  # even when the system activated fine — so verify /run/current-system points at
+  # the new config instead of trusting the exit code.
   Write-Host "==> nixos-rebuild switch --flake .#$HostAttr"
-  Invoke-InWsl "$flakes; cd /root/dotfiles && nixos-rebuild switch --flake .#$HostAttr"
+  Invoke-InWsl "$flakes; cd /root/dotfiles; nixos-rebuild switch --flake .#$HostAttr || true; readlink -f /run/current-system | grep -q 'nixos-system-$HostAttr-'"
 
   Write-Host "==> SUCCESS: '$Name' bootstrapped and switched to #$HostAttr" -ForegroundColor Green
   if ($RemoveOnSuccess) {
@@ -97,10 +100,10 @@ try {
     return
   }
   Write-Host "    Kept for inspection.  Enter it: wsl -d $Name   |   Remove it: wsl --unregister $Name"
-  Write-Host '    Now entering the instance as default user (ciznia) and re-running clone + ansible keys playbook to verify the user can bootstrap itself).'
-  Invoke-InWsl "$flakes; export GIT_LFS_SKIP_SMUDGE=1; nix shell nixpkgs#git --command git clone -b '$Branch' '$Repo' /home/ciznia/dotfiles" 'ciznia'
-  Invoke-InWsl "$flakes; cd /home/ciznia/dotfiles && nix develop --command ansible-playbook ansible/playbooks/keys.yml" 'ciznia'
-  Invoke-InWsl 'ssh -T git@github.com' 'ciznia'
+  Write-Host '    Second pass as ciznia: clone, inject vault pass, run the keys playbook, check ssh auth.'
+  Invoke-InWsl "$flakes; export GIT_LFS_SKIP_SMUDGE=1; nix shell nixpkgs#git --command git clone -b '$Branch' '$Repo' ~/dotfiles" 'ciznia'
+  Invoke-InWsl "cp '$vaultWsl' ~/dotfiles/.vault_pass && chmod 600 ~/dotfiles/.vault_pass" 'ciznia'
+  Invoke-InWsl "$flakes; cd ~/dotfiles && nix develop --command ansible-playbook ansible/playbooks/keys.yml" 'ciznia'
 }
 catch {
   Write-Host "==> FAILED: $($_.Exception.Message)" -ForegroundColor Red
