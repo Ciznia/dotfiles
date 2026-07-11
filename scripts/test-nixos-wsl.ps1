@@ -46,8 +46,8 @@ function Remove-Instance {
 }
 
 # Run a bash login command inside the instance as root; throw on nonzero exit.
-function Invoke-InWsl([string]$Script) {
-  wsl -d $Name -u root -- bash -lc $Script
+function Invoke-InWsl([string]$Script, [String]$User = 'root') {
+  wsl -d $Name -u $User -- bash -lc $Script
   if ($LASTEXITCODE -ne 0) { throw "WSL step failed (exit $LASTEXITCODE): $Script" }
 }
 
@@ -94,10 +94,13 @@ try {
   if ($RemoveOnSuccess) {
     Remove-Instance
     Write-Host '    (removed)'
+    return
   }
-  else {
-    Write-Host "    Kept for inspection.  Enter it: wsl -d $Name   |   Remove it: wsl --unregister $Name"
-  }
+  Write-Host "    Kept for inspection.  Enter it: wsl -d $Name   |   Remove it: wsl --unregister $Name"
+  Write-Host '    Now entering the instance as default user (ciznia) and re-running clone + ansible keys playbook to verify the user can bootstrap itself).'
+  Invoke-InWsl "$flakes; export GIT_LFS_SKIP_SMUDGE=1; nix shell nixpkgs#git --command git clone -b '$Branch' '$Repo' /home/ciznia/dotfiles" 'ciznia'
+  Invoke-InWsl "$flakes; cd /home/ciznia/dotfiles && nix develop --command ansible-playbook ansible/playbooks/keys.yml" 'ciznia'
+  Invoke-InWsl 'ssh -T git@github.com' 'ciznia'
 }
 catch {
   Write-Host "==> FAILED: $($_.Exception.Message)" -ForegroundColor Red
