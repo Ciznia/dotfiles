@@ -1,0 +1,32 @@
+# Normalize every text file to LF in the repo and on checkout (all platforms).
+* text=auto eol=lf
+
+# Non-code assets tracked via Git LFS (stored out-of-band, not in git history).
+# svg is intentionally omitted: it's XML/text, kept diffable and normalized.
+
+# Images
+*.png   filter=lfs diff=lfs merge=lfs -text
+*.jpg   filter=lfs diff=lfs merge=lfs -text
+*.jpeg  filter=lfs diff=lfs merge=lfs -text
+*.gif   filter=lfs diff=lfs merge=lfs -text
+*.webp  filter=lfs diff=lfs merge=lfs -text
+*.bmp   filter=lfs diff=lfs merge=lfs -text
+*.ico   filter=lfs diff=lfs merge=lfs -text
+*.tiff  filter=lfs diff=lfs merge=lfs -text
+*.avif  filter=lfs diff=lfs merge=lfs -text
+*.heic  filter=lfs diff=lfs merge=lfs -text
+
+# Video
+*.mp4   filter=lfs diff=lfs merge=lfs -text
+*.mkv   filter=lfs diff=lfs merge=lfs -text
+*.webm  filter=lfs diff=lfs merge=lfs -text
+*.mov   filter=lfs diff=lfs merge=lfs -text
+*.avi   filter=lfs diff=lfs merge=lfs -text
+*.m4v   filter=lfs diff=lfs merge=lfs -text
+*.wmv   filter=lfs diff=lfs merge=lfs -text
+
+# Documents
+*.pdf   filter=lfs diff=lfs merge=lfs -text
+*.docx  filter=lfs diff=lfs merge=lfs -text
+*.pptx  filter=lfs diff=lfs merge=lfs -text
+*.xlsx  filter=lfs diff=lfs merge=lfs -text
