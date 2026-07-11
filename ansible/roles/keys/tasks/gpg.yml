@@ -30,8 +30,10 @@
   no_log: true
 
 - name: Mark the imported key as ultimately trusted
+  # No trailing "\n" — the command module's stdin_add_newline appends one, and a
+  # second (empty) line makes `gpg --import-ownertrust` fail with "colon missing".
   ansible.builtin.command: gpg --import-ownertrust
   args:
-    stdin: "{{ gpg_vault_fpr }}:6:\n"
+    stdin: "{{ gpg_vault_fpr }}:6:"
   when: gpg_import is changed
   changed_when: true
