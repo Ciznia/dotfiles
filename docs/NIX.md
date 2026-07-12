@@ -21,8 +21,8 @@ On NixOS hosts it is embedded into the system build; on non-NixOS hosts
   `modules/nixos/` and simply doesn't exist on standalone hosts; the base distro
   provides that layer.
   - Note the user/system split: the agent loader is a `systemd.user` timer (a
-    home option, so it's portable), while its `users.users.<name>.linger` toggle
-    is system-level and lives in the host config.
+    home option, so it's portable), while things like GPU drivers or the
+    nixos-wsl module are system-level and live in the host config.
 - A non-NixOS host opts into a small **standalone contract** (below).
 
 This keeps the user environment portable to any future non-NixOS machine.
@@ -115,7 +115,7 @@ build is broken. (Unstable requires tracking home-manager `master`, as above.)
 flake.nix            # inputs + inline helpers (mkPkgs/mkHome/mkHost, stable overlay) + outputs
 flake.lock
 hosts/
-  atlas/default.nix                 # NixOS-WSL system (+ user linger)
+  atlas/default.nix                 # NixOS-WSL system
   glados/default.nix                # GRUB, NVIDIA offload, keyboard
   glados/hardware-configuration.nix
 modules/home/        # the home toolbox (gated ciznia.* modules)
@@ -241,8 +241,6 @@ passphrases. `modules/home/agent.nix` runs the Ansible `--tags agent` flow via a
   passphrase (with a window to notice before it would).
 - Presets the gpg passphrase (`gpg-preset-passphrase`) and ssh key (`ssh-add`)
   straight from the vault.
-- On NixOS-WSL, `users.users.ciznia.linger = true` keeps the user systemd
-  instance (and this timer) alive with no shell open.
 
 Prereqs: keys already deployed (a full `keys.yml` run) and `.vault_pass` present
 at `ciznia.agent.repoPath` (default `~/dotfiles`).
