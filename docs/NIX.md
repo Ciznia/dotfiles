@@ -42,16 +42,19 @@ Portal-themed (`atlas`/`pbody` = the Co-op bots).
 
 ### Desktop stack (`glados`)
 
-The `glados` **base** is implemented in `hosts/glados/` — GRUB (dual-boot with
-os-prober), NVIDIA PRIME offload, and the FR/US keyboard. The **graphical stack
-below is still to build**: it will live behind `ciznia.desktop.enable` (only
-`glados` flips it on). Locked decisions:
+`hosts/glados/` has the base — GRUB (dual-boot, os-prober), NVIDIA PRIME offload,
+FR/US keyboard. A **first cut of the graphical stack is implemented** (X11 + SDDM
++ qtile + wallpaper + video lock) across `modules/nixos/desktop.nix` and
+`modules/home/desktop.nix`, gated by `ciznia.desktop.enable` (only `glados`).
+It's **untested** — no graphical machine to run it on yet. Still TODO: the SDDM
+**video greeter** (custom QML theme; default SDDM theme for now). Decisions:
 
 - **Display server:** X11. Wayland is a later migration — NVIDIA laptop-hybrid
   \+ qtile's more mature X11 backend make X11 the pragmatic first target.
 - **WM:** qtile (X11 backend).
-- **Greeter:** SDDM, custom QML theme playing `assets/lockscreen.mp4`. Greeter
-  audio is **muted** — pre-login has no user session whose mute state to follow.
+- **Greeter:** SDDM (default theme for now). TODO: custom QML theme playing
+  `assets/lockscreen.mp4`, audio **muted** (pre-login has no user session whose
+  mute state to follow).
 - **Lock:** `xsecurelock` running `mpv` (looping `assets/lockscreen.mp4`), wired
   to idle/suspend via `xss-lock`. Audio goes through the user's sink, so it
   **follows the system mute** automatically (no `--mute`, no forced volume).
@@ -118,14 +121,19 @@ hosts/
   atlas/default.nix                 # NixOS-WSL system
   glados/default.nix                # GRUB, NVIDIA offload, keyboard
   glados/hardware-configuration.nix
+modules/nixos/       # the system toolbox (gated ciznia.* modules)
+  default.nix        # aggregator (imported into every host by mkHost)
+  desktop.nix        # ciznia.desktop — X11 + SDDM + qtile + audio + lock (system)
 modules/home/        # the home toolbox (gated ciznia.* modules)
   default.nix        # aggregator
   git.nix            # ciznia.git — git + gpg + gpg-agent (one flag)
   agent.nix          # ciznia.agent — auto-load keys from the vault (systemd timer)
+  desktop.nix        # ciznia.desktop — qtile config, wallpaper, video lock (home)
+  qtile/config.py    # qtile session config (editable starting point)
 home/                # the recipes (per-host assembly)
   base.nix           # shared baseline (mkDefault flags)
   atlas.nix          # NixOS-WSL
-  glados.nix         # native NixOS (desktop stack later)
+  glados.nix         # native NixOS + desktop
   pbody.nix          # Ubuntu+Nix standalone
 scripts/
   test-nixos-wsl.ps1 # throwaway-instance bootstrap test (Windows)
@@ -134,8 +142,9 @@ docs/                # NIX.md, ANSIBLE.md, README.md
 ```
 
 The `mkHost` / `mkHome` helpers and the `stable` overlay currently live inline
-in `flake.nix`; extracting them to `lib/` + `overlays/` is a later cleanup. A
-`modules/nixos/` toolbox will appear when the desktop stack needs system modules.
+in `flake.nix`; extracting them to `lib/` + `overlays/` is a later cleanup.
+`modules/nixos/` is imported into every host by `mkHost`; its modules are gated,
+so only `glados` activates the desktop.
 
 ## Everything is a gated feature (`ciznia.*` options)
 
@@ -245,15 +254,41 @@ passphrases. `modules/home/agent.nix` runs the Ansible `--tags agent` flow via a
 Prereqs: keys already deployed (a full `keys.yml` run) and `.vault_pass` present
 at `ciznia.agent.repoPath` (default `~/dotfiles`).
 
+**WSL needs lingering.** `wsl` shell sessions never start a systemd *user*
+instance (no login/PAM session → no user bus), so without
+`users.users.<name>.linger = true` (set on atlas) *none* of the home-manager
+user services — gpg-agent **or** this timer — run at all. Caveat: linger makes
+the first `nixos-rebuild switch` exit nonzero (user@UID can't start
+mid-activation); the system still switches, and `wsl --terminate` + reopen brings
+it up cleanly. Native hosts (glados) get the user instance from the graphical
+login, so no linger is needed there.
+
 ## Testing on a throwaway instance
 
-`scripts/test-nixos-wsl.ps1` (run from **Windows PowerShell**) imports a fresh
-NixOS-WSL, clones the repo, runs the keys playbook, and `nixos-rebuild switch`es
-to a host — deleting the instance if any step fails. Push your branch first.
+**Fresh NixOS-WSL bootstrap** — `scripts/test-nixos-wsl.ps1` (run from **Windows
+PowerShell**) imports a clean NixOS-WSL, clones the repo, runs the keys playbook,
+and `nixos-rebuild switch`es to a host — deleting the instance if any step fails.
+Push your branch first.
 
 ```powershell
 ./scripts/test-nixos-wsl.ps1 -Branch <branch>
 ```
+
+**Graphical VM** — `glados` exposes a QEMU VM (via `virtualisation.vmVariant`) so
+the desktop can be smoke-tested before touching hardware. The VM swaps NVIDIA for
+the modesetting driver, drops the host's real disks, and gives `ciznia` a
+throwaway password:
+
+```bash
+nix run .#glados-vm          # login: ciznia / test
+# or: nixos-rebuild build-vm --flake .#glados && ./result/bin/run-glados-vm
+```
+
+Runs from WSL (WSLg shows the QEMU window) or any Linux; slow without nested KVM.
+The VM runs sshd with a host port-forward, so you can read logs even when the
+graphical session misbehaves: `ssh ciznia@localhost -p 2222` (password `test`).
+To also exercise the agent timer inside the VM, clone the repo to `~/dotfiles`
+and drop `.vault_pass` in first (otherwise `agent-preload` has nothing to read).
 
 ## Secrets boundary
 
