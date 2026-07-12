@@ -5,5 +5,6 @@
   imports = [
     ./git.nix
     ./agent.nix
+    ./desktop.nix
   ];
 }

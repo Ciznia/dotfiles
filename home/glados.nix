@@ -1,7 +1,8 @@
 {...}: {
   imports = [./base.nix];
 
-  # glados: native NixOS laptop, integrated home-manager. The desktop stack
-  # (qtile, SDDM video, xsecurelock) is added next, gated by ciznia.desktop.
+  # glados: native NixOS laptop, integrated home-manager.
+  ciznia.desktop.enable = true; # qtile session + wallpaper + video lock (home half)
+
   home.stateVersion = "26.05";
 }
