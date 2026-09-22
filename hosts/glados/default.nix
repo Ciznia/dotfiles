@@ -5,26 +5,19 @@
 }: {
   imports = [./hardware-configuration.nix];
 
-  # Dual-boot (NixOS + Windows): GRUB with os-prober to pick up the Windows
-  # entry. (GRUB and systemd-boot are mutually exclusive — pick one.)
-  boot = {
-    loader = {
-      efi.canTouchEfiVariables = true;
-      grub = lib.mkDefault {
-        enable = true;
-        efiSupport = true;
-        device = "nodev";
-        gfxmodeEfi = "1920x1080x32";
-        useOSProber = true;
-      };
-    };
-  };
+  # Bootloader: lanzaboote (Secure Boot), which replaces systemd-boot rather
+  # than layering on GRUB — see modules/nixos/secureboot.nix. Dual-boot with
+  # Windows doesn't need os-prober here: /boot is the pre-existing Windows ESP
+  # (see hardware-configuration.nix), and systemd-boot auto-discovers any other
+  # *.efi already on that same ESP, Windows Boot Manager included.
+  boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "glados";
   networking.networkmanager.enable = true;
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
   ciznia.desktop.enable = true; # X11 + SDDM + qtile + audio + lock (system half)
+  ciznia.secureBoot.enable = true; # signed boot chain (lanzaboote) — see docs/NIX.md
 
   users.users.${username} = {
     isNormalUser = true;

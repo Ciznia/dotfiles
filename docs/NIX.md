@@ -42,12 +42,13 @@ Portal-themed (`atlas`/`pbody` = the Co-op bots).
 
 ### Desktop stack (`glados`)
 
-`hosts/glados/` has the base — GRUB (dual-boot, os-prober), NVIDIA PRIME offload,
+`hosts/glados/` has the base — lanzaboote (Secure Boot), NVIDIA PRIME offload,
 FR/US keyboard. A **first cut of the graphical stack is implemented** (X11 + SDDM
 + qtile + wallpaper + video lock) across `modules/nixos/desktop.nix` and
 `modules/home/desktop.nix`, gated by `ciznia.desktop.enable` (only `glados`).
-It's **untested** — no graphical machine to run it on yet. Still TODO: the SDDM
-**video greeter** (custom QML theme; default SDDM theme for now). Decisions:
+Verified booting in the `glados-vm` QEMU smoke test (wallpaper + video lock
+render on X11); real hardware not yet confirmed. Still TODO: the SDDM **video
+greeter** (custom QML theme; default SDDM theme for now). Decisions:
 
 - **Display server:** X11. Wayland is a later migration — NVIDIA laptop-hybrid
   \+ qtile's more mature X11 backend make X11 the pragmatic first target.
@@ -65,6 +66,46 @@ It's **untested** — no graphical machine to run it on yet. Still TODO: the SDD
   - `nvidiaBusId = "PCI:1:0:0";`
   (verify with `lspci -nnk | grep -EA3 'VGA|3D'` if a driver update misbehaves).
 - **Assets** live in `assets/` and are **Git-LFS** tracked.
+
+### Secure Boot (`glados`)
+
+`modules/nixos/secureboot.nix` wires [lanzaboote](https://github.com/nix-community/lanzaboote)
+behind `ciznia.secureBoot.enable` (only `glados`). Lanzaboote **replaces**
+systemd-boot (not GRUB + systemd-boot side by side) — it signs the boot stub and
+each generation's kernel/initrd with a key enrolled into the firmware, so only
+what you signed will boot. This is why GRUB/os-prober is gone from
+`hosts/glados/`: dual-boot with Windows now relies on systemd-boot's own
+auto-discovery of other `*.efi` binaries already on the same ESP (Windows Boot
+Manager included), not on GRUB scanning for other OSes.
+
+**UNTESTED on real hardware.** The `glados-vm` QEMU smoke test does **not**
+exercise this — `system.build.vm` boots the kernel/initrd directly, bypassing
+the real bootloader and any signing/enrollment entirely (true for the old GRUB
+config too). Only a real boot proves Secure Boot actually works.
+
+Key enrollment is a **one-time, imperative, on-the-machine** process — it can't
+be expressed in Nix, since the keys are host-specific secrets that must never
+land in the Nix store:
+
+```bash
+sudo nixos-rebuild switch --flake .#glados   # installs lanzaboote/systemd-boot
+sudo sbctl create-keys                       # generates keys in /var/lib/sbctl
+# Reboot into firmware settings, put Secure Boot into "Setup Mode"
+# (steps are vendor-specific — see the lanzaboote docs for your firmware)
+# Boot back into NixOS, then:
+sudo sbctl enroll-keys --microsoft           # --microsoft is REQUIRED for dual-boot:
+                                              # without it, Windows Boot Manager
+                                              # (signed by Microsoft, not your key)
+                                              # is rejected once Secure Boot enforces
+reboot
+bootctl status                               # expect: Secure Boot: enabled (user)
+sudo sbctl verify                            # confirms the boot chain is signed
+```
+
+Have recovery media on hand before this — a bootloader swap on a dual-boot disk
+is the one class of mistake here that's hardest to walk back from a mid-switch
+failure. Full walkthrough (device-specific Setup Mode steps, Framework/ThinkPad/
+Surface quirks): <https://nix-community.github.io/lanzaboote/>.
 
 Activation:
 
@@ -105,6 +146,7 @@ inputs = {
   nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";      # pinned fallback
   home-manager = { url = "github:nix-community/home-manager"; inputs.nixpkgs.follows = "nixpkgs"; };
   nixos-wsl    = { url = "github:nix-community/NixOS-WSL";     inputs.nixpkgs.follows = "nixpkgs"; };
+  lanzaboote   = { url = "github:nix-community/lanzaboote/v1.1.0"; inputs.nixpkgs.follows = "nixpkgs"; };
 };
 # overlay: final: prev: { stable = import nixpkgs-stable { inherit (prev) system; config.allowUnfree = true; }; }
 ```
@@ -119,11 +161,12 @@ flake.nix            # inputs + inline helpers (mkPkgs/mkHome/mkHost, stable ove
 flake.lock
 hosts/
   atlas/default.nix                 # NixOS-WSL system
-  glados/default.nix                # GRUB, NVIDIA offload, keyboard
+  glados/default.nix                # lanzaboote, NVIDIA offload, keyboard
   glados/hardware-configuration.nix
 modules/nixos/       # the system toolbox (gated ciznia.* modules)
   default.nix        # aggregator (imported into every host by mkHost)
   desktop.nix        # ciznia.desktop — X11 + SDDM + qtile + audio + lock (system)
+  secureboot.nix  # ciznia.secureBoot — lanzaboote Secure Boot (system)
 modules/home/        # the home toolbox (gated ciznia.* modules)
   default.nix        # aggregator
   git.nix            # ciznia.git — git + gpg + gpg-agent (one flag)
