@@ -20,6 +20,11 @@
         push.autoSetupRemote = true;
       };
 
+      # Installs git-lfs and its global filter, so clones and pulls check out the
+      # real LFS files (assets/) instead of ~130-byte pointer files. A clone made
+      # without it silently fed pointers to the desktop (see docs/NIX.md).
+      lfs.enable = true;
+
       # Sign every commit/tag with the GPG identity restored by the Ansible
       # preflight (fingerprint from `gpg --show-keys`).
       signing = {
