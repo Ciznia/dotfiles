@@ -17,8 +17,22 @@
 # ── GPG: preload the key passphrase into gpg-agent ────────────────────
 # Runs before the SSH part so signing still works if the SSH key isn't
 # imported yet (that part fails the run).
+#
+# Only the vaulted key gets the vault passphrase: listing by email would also
+# match retired keys left in the keyring, and presetting a wrong passphrase
+# makes gpg fall back to a pinentry for them.
+- name: Read the vaulted GPG key's fingerprint
+  ansible.builtin.command: gpg --import --import-options show-only --with-colons
+  args:
+    stdin: "{{ vault_gpg_private_key }}"
+  register: gpg_vault_show
+  changed_when: false
+  no_log: true
+
 - name: Read the keygrips for the GPG identity
-  ansible.builtin.command: gpg --batch --with-colons --with-keygrip --list-secret-keys {{ gpg_email }}
+  ansible.builtin.command: >-
+    gpg --batch --with-colons --with-keygrip --list-secret-keys
+    {{ gpg_vault_show.stdout | regex_findall('^fpr:+([0-9A-F]+)', multiline=true) | first }}
   register: gpg_keygrips
   changed_when: false
   failed_when: false
