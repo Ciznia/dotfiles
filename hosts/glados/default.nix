@@ -6,10 +6,10 @@
   imports = [./hardware-configuration.nix];
 
   # Bootloader: lanzaboote (Secure Boot), which replaces systemd-boot rather
-  # than layering on GRUB — see modules/nixos/secureboot.nix. Dual-boot with
-  # Windows doesn't need os-prober here: /boot is the pre-existing Windows ESP
-  # (see hardware-configuration.nix), and systemd-boot auto-discovers any other
-  # *.efi already on that same ESP, Windows Boot Manager included.
+  # than layering on GRUB — see modules/nixos/secureboot.nix. Windows is NOT in
+  # this menu: it lives on the other NVMe with its own ESP, and systemd-boot only
+  # lists what's on its own ESP (there's no os-prober). Boot Windows from the
+  # firmware boot menu instead (F11 on this MSI), which keeps its own ESP entry.
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "glados";

@@ -24,6 +24,10 @@
     boot.lanzaboote = {
       enable = true;
       pkiBundle = "/var/lib/sbctl";
+      # Each generation puts a signed stub (+ kernel/initrd when they change) on
+      # the ESP, and glados' ESP is only 500M. Older generations stay in the
+      # store and remain reachable with `nixos-rebuild switch --rollback`.
+      configurationLimit = 3;
     };
 
     environment.systemPackages = [pkgs.sbctl]; # `sbctl status` / `sbctl verify`
