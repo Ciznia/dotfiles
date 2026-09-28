@@ -6,8 +6,22 @@
 }: let
   cfg = config.ciznia.desktop;
 
-  wallpaper = ../../assets/wallpaper.jpeg;
-  lockVideo = ../../assets/lockscreen.mp4;
+  # The assets are Git-LFS tracked. In a clone without git-lfs they are ~130-byte
+  # pointer files, and Nix copies the checkout as-is — feh then fails to load the
+  # wallpaper, X's root window is never painted, and the session looks frozen
+  # (stale SDDM image, windows leaving trails). Fail the build loudly instead.
+  lfsAsset = src:
+    pkgs.runCommandLocal (baseNameOf src) {} ''
+      if head -c 64 ${src} | grep -aq '^version https://git-lfs'; then
+        echo "error: ${baseNameOf src} is a Git LFS pointer, not the real file." >&2
+        echo "Fetch it with 'git lfs install --local && git lfs pull' in the repo, then rebuild." >&2
+        exit 1
+      fi
+      cp ${src} $out
+    '';
+
+  wallpaper = lfsAsset ../../assets/wallpaper.jpeg;
+  lockVideo = lfsAsset ../../assets/lockscreen.mp4;
 
   # xsecurelock saver: play the lock video into its window ($XSCREENSAVER_WINDOW).
   # No --mute / no forced volume, so audio follows the system sink (muted => silent).
@@ -39,6 +53,9 @@ in {
         executable = true;
         text = ''
           #!/bin/sh
+          # Paint a solid root background first: SDDM starts X with none, so if
+          # the wallpaper ever fails to load, exposed areas still get cleared.
+          ${pkgs.xsetroot}/bin/xsetroot -solid '#1e1e2e'
           # Wallpaper.
           ${pkgs.feh}/bin/feh --no-fehbg --bg-fill ${wallpaper} &
           # Lock on idle/suspend + on `loginctl lock-session`, with the video saver.

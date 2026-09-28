@@ -65,7 +65,18 @@ greeter** (custom QML theme; default SDDM theme for now). Decisions:
   - `intelBusId  = "PCI:0:2:0";`
   - `nvidiaBusId = "PCI:1:0:0";`
   (verify with `lspci -nnk | grep -EA3 'VGA|3D'` if a driver update misbehaves).
-- **Assets** live in `assets/` and are **Git-LFS** tracked.
+- **Assets** live in `assets/` and are **Git-LFS** tracked. Nix builds from the
+  checkout as-is, so a clone made without git-lfs feeds ~130-byte pointer files
+  to the desktop: feh can't load the wallpaper, X's root window (SDDM starts it
+  with no background) is never repainted, and the session *looks* frozen — the
+  SDDM image stays up and windows leave trails, though input still works.
+  Guards: `ciznia.git` enables `programs.git.lfs` (git-lfs + its global filter,
+  so new clones/pulls get the real files); `modules/home/desktop.nix` fails the
+  build if an asset is still a pointer; and autostart paints a solid root
+  background before feh. To fix an existing clone:
+  `git lfs install --local && git lfs pull`. (`inputs.self.lfs = true` doesn't
+  help here: it only applies when Nix fetches the repo itself, not a local
+  `--flake .` checkout, and a failed LFS fetch silently falls back to pointers.)
 
 ### Secure Boot (`glados`)
 
