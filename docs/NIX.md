@@ -85,9 +85,11 @@ behind `ciznia.secureBoot.enable` (only `glados`). Lanzaboote **replaces**
 systemd-boot (not GRUB + systemd-boot side by side) — it signs the boot stub and
 each generation's kernel/initrd with a key enrolled into the firmware, so only
 what you signed will boot. This is why GRUB/os-prober is gone from
-`hosts/glados/`: dual-boot with Windows now relies on systemd-boot's own
-auto-discovery of other `*.efi` binaries already on the same ESP (Windows Boot
-Manager included), not on GRUB scanning for other OSes.
+`hosts/glados/`. systemd-boot has no os-prober: it only lists `*.efi` binaries
+on its own ESP, and Windows on glados sits on the other NVMe with its own ESP.
+So the menu shows NixOS generations only, and Windows is booted from the
+firmware boot menu (**F11** on this MSI), which keeps Windows' own, always
+up-to-date boot entry. `configurationLimit = 3` keeps the 500M ESP from filling.
 
 **UNTESTED on real hardware.** The `glados-vm` QEMU smoke test does **not**
 exercise this — `system.build.vm` boots the kernel/initrd directly, bypassing
@@ -105,7 +107,7 @@ land in the Nix store:
 sudo nix run nixpkgs#sbctl -- create-keys    # generates keys in /var/lib/sbctl
 
 # 2. Install lanzaboote with Secure Boot still OFF in the firmware, and check
-#    that both NixOS and Windows still boot from the new systemd-boot menu.
+#    that NixOS boots from the new systemd-boot menu and Windows from F11.
 sudo nixos-rebuild switch --flake .#glados
 reboot
 sudo sbctl verify                            # kernel-* files unsigned is expected
