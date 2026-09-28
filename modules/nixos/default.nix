@@ -3,5 +3,6 @@
   # Pulled into every host by mkHost; inert until a host flips a flag.
   imports = [
     ./desktop.nix
+    ./secureboot.nix
   ];
 }
