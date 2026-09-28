@@ -24,12 +24,13 @@
     extraGroups = ["wheel" "networkmanager" "video"];
   };
 
-  # NVIDIA RTX 4060 Laptop (Ada) — PRIME offload: the iGPU drives the display,
-  # the dGPU runs on demand via the `nvidia-offload` wrapper. The driver here
-  # must be the IGPU's (modesetting), not nvidia — nvidia has no display output
-  # in offload mode, so `videoDrivers = ["nvidia"]` starts X against a GPU with
-  # nothing to scan out to, which is what froze the session after SDDM login.
-  services.xserver.videoDrivers = ["modesetting"];
+  # NVIDIA RTX 4060 Laptop (Ada) — PRIME offload: the iGPU drives the panel,
+  # the dGPU runs on demand via the `nvidia-offload` wrapper. "nvidia" must be
+  # listed: NixOS only enables the hardware.nvidia block below when it is (with
+  # just "modesetting", nouveau grabbed the dGPU), and with offload it sets up
+  # modesetting for the iGPU itself. The old post-login "freeze" blamed on this
+  # was the LFS-pointer wallpaper (commit 1eb7fcc), not the driver.
+  services.xserver.videoDrivers = ["nvidia"];
   hardware = {
     graphics.enable = true;
     nvidia = {
@@ -40,6 +41,9 @@
       prime = {
         offload.enable = true;
         offload.enableOffloadCmd = true; # provides `nvidia-offload`
+        # The HDMI port is wired to the dGPU: reverse PRIME lets the iGPU's X
+        # screen drive it (xrandr --setprovideroutputsource at X start).
+        reverseSync.enable = true;
         intelBusId = "PCI:0:2:0";
         nvidiaBusId = "PCI:1:0:0";
       };
