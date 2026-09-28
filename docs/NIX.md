@@ -303,6 +303,18 @@ baseline as-is (`atlas`, `glados`, `pbody`).
    - NixOS → `sudo nixos-rebuild switch --flake .#<name>`
    - Standalone → `home-manager switch --flake .#ciznia@<name>`
 
+## Dual boot clock (glados)
+
+Windows keeps the hardware clock (RTC) in local time by default, NixOS in UTC,
+so the clock is off by the UTC offset after every switch between them. Keep
+it in UTC on both sides:
+
+- NixOS: `time.hardwareClockInLocalTime = false` (hosts/glados). An
+  `/etc/adjtime` that already says `LOCAL` isn't rewritten by that, so run
+  `sudo timedatectl set-local-rtc 0` once.
+- Windows, admin prompt, then reboot:
+  `reg add "HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" /v RealTimeIsUniversal /t REG_DWORD /d 1 /f`
+
 ## Key auto-loading (`ciznia.agent`)
 
 Signed commits and ssh need the keys unlocked in the agent — without typing
