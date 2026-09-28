@@ -36,17 +36,24 @@
   no_log: true  # keep the passphrase out of the run output
   changed_when: false
 
-# ── SSH: preset the key gpg-agent already holds ───────────────────────
-# ssh-add can't do the import headlessly: gpg-agent answers a new key with its
-# own pinentry to choose a protection passphrase, which needs a terminal. So
-# the import is a one-time manual step (see fail_msg) and every run after it
+# ── SSH: import once, then preset like the GPG keys ──────────────────
+# gpg-agent holds the SSH key too (enableSshSupport). It only gets it through
+# ssh-add, and on that first import it asks its pinentry for a passphrase to
+# protect its copy — which needs a terminal. So the import runs against a
+# throwaway gpg-agent whose pinentry answers from the vault, and the protected
+# key file it writes is copied into the real agent's homedir. Every run then
 # just presets the passphrase for the key's keygrip.
 - name: Read the SSH key fingerprint
   ansible.builtin.command: ssh-keygen -lf {{ ssh_private_key_path }}.pub
   register: ssh_key_fpr
   changed_when: false
 
-# Only lists keys in ~/.gnupg/sshcontrol, which ssh-add fills on import.
+- name: Locate the gpg homedir
+  ansible.builtin.command: gpgconf --list-dirs homedir
+  register: gpg_homedir
+  changed_when: false
+
+# Only lists keys in sshcontrol, which the import below fills.
 - name: List the SSH keys gpg-agent holds
   ansible.builtin.command: gpg-connect-agent 'keyinfo --ssh-list --ssh-fpr=sha256' /bye
   register: gpg_ssh_keys
@@ -61,15 +68,115 @@
                         '\1', multiline=true)
          | default([''], true) | first }}
 
-- name: Require the SSH key to be imported into gpg-agent
-  ansible.builtin.assert:
-    that: ssh_keygrip | length > 0
-    fail_msg: >-
-      {{ ssh_private_key_path }} isn't in gpg-agent yet. Import it once from a
-      terminal: `gpg-connect-agent updatestartuptty /bye && ssh-add
-      {{ ssh_private_key_path }}`, and when gpg-agent asks for a passphrase to
-      protect the key, reuse the same one (vault_ssh_passphrase).
-    quiet: true
+# A block's `when` is re-checked on every task inside it (always included), so
+# gate it on a flag the import doesn't change rather than on ssh_keygrip.
+- name: Note whether the SSH key needs importing
+  ansible.builtin.set_fact:
+    ssh_key_needs_import: "{{ ssh_keygrip | length == 0 }}"
+
+- name: Import the SSH key into gpg-agent
+  when: ssh_key_needs_import | bool
+  block:
+    # Under /run/user (tmpfs, 0700): nothing here outlives the block.
+    - name: Create a throwaway gpg-agent homedir
+      ansible.builtin.tempfile:
+        state: directory
+        path: /run/user/{{ ansible_facts.user_uid }}
+        prefix: agent-import.
+      register: import_home
+
+    # Both helpers hold no secret: they echo $AGENT_IMPORT_PASSPHRASE, which
+    # only the throwaway agent (and so its pinentry) and ssh-add get.
+    - name: Write the throwaway pinentry and askpass helpers
+      ansible.builtin.copy:
+        dest: "{{ import_home.path }}/{{ item.name }}"
+        mode: "0700"
+        content: "{{ item.content }}"
+      loop:
+        - name: pinentry
+          content: |
+            #!/usr/bin/env bash
+            # Minimal Assuan pinentry: every GETPIN gets the passphrase
+            # (%-escaped), every other request (SETREPEAT, CONFIRM…) an OK.
+            pin=${AGENT_IMPORT_PASSPHRASE//%/%25}
+            echo "OK Pleased to meet you"
+            while IFS= read -r line; do
+              case $line in
+                GETPIN*) printf 'D %s\nOK\n' "$pin" ;;
+                BYE*) echo OK; exit 0 ;;
+                *) echo OK ;;
+              esac
+            done
+        - name: askpass
+          content: |
+            #!/usr/bin/env bash
+            printf '%s' "$AGENT_IMPORT_PASSPHRASE"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Start the throwaway gpg-agent
+      ansible.builtin.command: >-
+        gpg-agent --homedir {{ import_home.path }} --daemon --enable-ssh-support
+        --pinentry-program {{ import_home.path }}/pinentry
+      environment:
+        AGENT_IMPORT_PASSPHRASE: "{{ vault_ssh_passphrase }}"
+      no_log: true
+      changed_when: false
+
+    - name: Locate the throwaway agent's ssh socket
+      ansible.builtin.command: gpgconf --homedir {{ import_home.path }} --list-dirs agent-ssh-socket
+      register: import_sock
+      changed_when: false
+
+    # ssh-add's own prompt (the key file's passphrase) goes to askpass; the
+    # agent's "protect the imported key" prompt goes to the pinentry. Same
+    # passphrase for both, so the preset below unlocks it.
+    - name: ssh-add into the throwaway agent
+      ansible.builtin.command: ssh-add {{ ssh_private_key_path }}
+      environment:
+        SSH_AUTH_SOCK: "{{ import_sock.stdout }}"
+        SSH_ASKPASS: "{{ import_home.path }}/askpass"
+        SSH_ASKPASS_REQUIRE: force
+        AGENT_IMPORT_PASSPHRASE: "{{ vault_ssh_passphrase }}"
+      no_log: true
+      changed_when: false
+
+    - name: Find the protected key file it wrote
+      ansible.builtin.find:
+        paths: "{{ import_home.path }}/private-keys-v1.d"
+        patterns: "*.key"
+      register: import_key
+
+    - name: Record the keygrip
+      ansible.builtin.set_fact:
+        ssh_keygrip: "{{ (import_key.files | first).path | basename | regex_replace('\\.key$', '') }}"
+
+    # Passphrase-protected, like the GPG key files next to it.
+    - name: Hand the key to the real gpg-agent
+      ansible.builtin.copy:
+        src: "{{ import_home.path }}/private-keys-v1.d/{{ ssh_keygrip }}.key"
+        dest: "{{ gpg_homedir.stdout }}/private-keys-v1.d/{{ ssh_keygrip }}.key"
+        remote_src: true
+        mode: "0600"
+
+    - name: Enable the key for ssh (sshcontrol)
+      ansible.builtin.lineinfile:
+        path: "{{ gpg_homedir.stdout }}/sshcontrol"
+        line: "{{ ssh_keygrip }} 0"
+        create: true
+        mode: "0600"
+  always:
+    - name: Stop the throwaway gpg-agent
+      ansible.builtin.command: gpgconf --homedir {{ import_home.path }} --kill gpg-agent
+      when: import_home.path is defined
+      changed_when: false
+      failed_when: false
+
+    - name: Remove the throwaway homedir
+      ansible.builtin.file:
+        path: "{{ import_home.path }}"
+        state: absent
+      when: import_home.path is defined
 
 - name: Preset the SSH key passphrase into the agent
   ansible.builtin.command: "{{ gpg_libexec.stdout }}/gpg-preset-passphrase --preset {{ ssh_keygrip }}"

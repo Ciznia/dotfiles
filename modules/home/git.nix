@@ -35,6 +35,11 @@
 
     programs.gpg.enable = true;
 
+    # home-manager only exports SSH_AUTH_SOCK (and GPG_TTY) from shells it
+    # manages; unmanaged, a login bash never learns about gpg-agent's ssh socket
+    # ("Could not open a connection to your authentication agent").
+    programs.bash.enable = true;
+
     # gpg-agent configured here (home-manager), NOT via the NixOS
     # programs.gnupg.agent — so it behaves identically on standalone hosts and
     # the two never fight over the socket. It also doubles as the ssh-agent

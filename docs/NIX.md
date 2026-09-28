@@ -315,9 +315,11 @@ passphrases. `modules/home/agent.nix` runs the Ansible `--tags agent` flow via a
 - Presets the gpg and ssh passphrases into gpg-agent (`gpg-preset-passphrase`)
   straight from the vault. gpg-agent is the only agent: it holds the ssh key too.
 
-Prereqs: keys already deployed (a full `keys.yml` run), the ssh key imported into
-gpg-agent once from a terminal (see [ANSIBLE.md](ANSIBLE.md#loading-the-key-at-startup)),
-and `.vault_pass` present at `ciznia.agent.repoPath` (default `~/dotfiles`).
+- Imports the ssh key into gpg-agent on first run, headlessly (see
+  [ANSIBLE.md](ANSIBLE.md#loading-the-key-at-startup)).
+
+Prereqs: keys already deployed (a full `keys.yml` run) and `.vault_pass` present
+at `ciznia.agent.repoPath` (default `~/dotfiles`).
 
 **WSL needs lingering.** `wsl` shell sessions never start a systemd *user*
 instance (no login/PAM session → no user bus), so without
