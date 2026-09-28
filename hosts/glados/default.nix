@@ -1,5 +1,6 @@
 {
   lib,
+  pkgs,
   username,
   ...
 }: {
@@ -49,6 +50,56 @@
       };
     };
   };
+
+  # Screens: autorandr picks a layout by EDID — on hotplug (udev), after
+  # suspend, at X start (below) and at session start (qtile autostart). The HP
+  # X27c sits right of the laptop and is the primary. A user `autorandr --save
+  # docked` (e.g. after arranging with arandr) lands in ~/.config/autorandr and
+  # overrides the same-named profile here.
+  services.autorandr = {
+    enable = true;
+    defaultTarget = "mobile";
+    profiles = let
+      fingerprint = {
+        laptop = "00ffffffffffff0006af8f9700000000031e0104a526167803707593585a942920505400000001010101010101010101010101010101ce8f80b6703888403020a5007ed710000018ec3b80b6703888403020a5007ed710000018000000fd003c90b0b025010a202020202020000000fe004231373348414e30342e39200a007a";
+        hp = "00ffffffffffff00220e343701010101251f0103803c22782e1125ad5061a525165054a10800d1c081c0a9c09500b300810081800101023a801871382d40582c450055502100001e000000fd003ca51ed232000a202020202020000000fc00485020583237630a2020202020000000ff00434e43313337313930330a2020016a020336f148903f400403020155230907078301000067030c001000004267d85dc4017880006d1a000002013ca5ed0000000000e2006b089b80a070384d403020350055502100001a5a8780a070384d403020350055502100001a0474801871382d40582c450055502100001e2a4480a0703827403020350055502100001a00cd";
+      };
+      panel = {
+        enable = true;
+        mode = "1920x1080";
+        rate = "144.03";
+      };
+    in {
+      docked = {
+        fingerprint = {
+          eDP-1 = fingerprint.laptop;
+          HDMI-1-0 = fingerprint.hp;
+        };
+        config = {
+          eDP-1 = panel // {position = "0x0";};
+          HDMI-1-0 = {
+            enable = true;
+            primary = true;
+            mode = "1920x1080";
+            rate = "164.92";
+            position = "1920x0";
+          };
+        };
+      };
+      mobile = {
+        fingerprint.eDP-1 = fingerprint.laptop;
+        config.eDP-1 = panel // {
+          primary = true;
+          position = "0x0";
+        };
+      };
+    };
+  };
+  # The reverse PRIME setup ends in `xrandr --auto`, which mirrors the screens;
+  # lay them out properly before the greeter shows.
+  services.xserver.displayManager.setupCommands = lib.mkAfter ''
+    ${pkgs.autorandr}/bin/autorandr --change --default mobile || true
+  '';
 
   time.timeZone = "Europe/Paris"; # update when you move
   # RTC in UTC, like Windows with RealTimeIsUniversal=1 (docs/NIX.md). This
