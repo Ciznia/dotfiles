@@ -37,6 +37,7 @@ in {
   config = lib.mkIf cfg.enable {
     home.packages = with pkgs; [
       feh # wallpaper
+      arandr # arrange screens by hand, then `autorandr --save <profile>`
       mpv # lock-screen video
       xsecurelock # screen locker
       xss-lock # lock on idle/suspend
@@ -56,6 +57,8 @@ in {
           # Paint a solid root background first: SDDM starts X with none, so if
           # the wallpaper ever fails to load, exposed areas still get cleared.
           ${pkgs.xsetroot}/bin/xsetroot -solid '#1e1e2e'
+          # Screen layout (profiles live in the host config, see services.autorandr).
+          ${pkgs.autorandr}/bin/autorandr --change --default mobile || true
           # Wallpaper.
           ${pkgs.feh}/bin/feh --no-fehbg --bg-fill ${wallpaper} &
           # Lock on idle/suspend + on `loginctl lock-session`, with the video saver.
