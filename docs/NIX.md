@@ -99,18 +99,26 @@ be expressed in Nix, since the keys are host-specific secrets that must never
 land in the Nix store:
 
 ```bash
-sudo nixos-rebuild switch --flake .#glados   # installs lanzaboote/systemd-boot
-sudo sbctl create-keys                       # generates keys in /var/lib/sbctl
-# Reboot into firmware settings, put Secure Boot into "Setup Mode"
-# (steps are vendor-specific — see the lanzaboote docs for your firmware)
-# Boot back into NixOS, then:
+# 1. Keys FIRST: lanzaboote signs with /var/lib/sbctl at install time, so a
+#    switch without them fails at the bootloader step. sbctl isn't installed
+#    until the switch, hence `nix run`.
+sudo nix run nixpkgs#sbctl -- create-keys    # generates keys in /var/lib/sbctl
+
+# 2. Install lanzaboote with Secure Boot still OFF in the firmware, and check
+#    that both NixOS and Windows still boot from the new systemd-boot menu.
+sudo nixos-rebuild switch --flake .#glados
+reboot
+sudo sbctl verify                            # kernel-* files unsigned is expected
+
+# 3. Reboot into firmware settings, put Secure Boot into "Setup Mode"
+#    (steps are vendor-specific — see the lanzaboote docs for your firmware).
+#    Boot back into NixOS, then:
 sudo sbctl enroll-keys --microsoft           # --microsoft is REQUIRED for dual-boot:
                                               # without it, Windows Boot Manager
                                               # (signed by Microsoft, not your key)
                                               # is rejected once Secure Boot enforces
-reboot
+# 4. Turn Secure Boot on in the firmware, then:
 bootctl status                               # expect: Secure Boot: enabled (user)
-sudo sbctl verify                            # confirms the boot chain is signed
 ```
 
 Have recovery media on hand before this — a bootloader swap on a dual-boot disk
