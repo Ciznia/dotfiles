@@ -17,9 +17,10 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # Runs `ansible-playbook … --tags agent`, which ssh-adds the key and presets
-    # the gpg passphrase from the vault (no prompt). Assumes the keys are already
-    # on disk (a full `keys.yml` run) and .vault_pass is present at repoPath.
+    # Runs `ansible-playbook … --tags agent`, which presets the gpg and ssh
+    # passphrases into gpg-agent from the vault (no prompt), importing the ssh key
+    # into gpg-agent first if needed. Assumes the keys are already on disk (a full
+    # `keys.yml` run) and .vault_pass is present at repoPath.
     systemd.user.services.agent-preload = {
       Unit = {
         Description = "Load ssh/gpg keys into the agent from the Ansible vault";
@@ -29,8 +30,9 @@ in {
         Type = "oneshot";
         WorkingDirectory = cfg.repoPath;
         Environment = [
-          "PATH=${lib.makeBinPath [pkgs.ansible pkgs.openssh pkgs.gnupg]}"
-          # Point ssh-add at gpg-agent's ssh socket (enableSshSupport).
+          # coreutils + bash: ansible's local connection shells out to mkdir etc.
+          "PATH=${lib.makeBinPath [pkgs.ansible pkgs.openssh pkgs.gnupg pkgs.coreutils pkgs.bash]}"
+          # Point ssh tooling at gpg-agent's ssh socket (enableSshSupport).
           "SSH_AUTH_SOCK=%t/gnupg/S.gpg-agent.ssh"
         ];
         ExecStart = "${pkgs.ansible}/bin/ansible-playbook ansible/playbooks/keys.yml --tags agent";
