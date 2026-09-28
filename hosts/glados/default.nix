@@ -54,8 +54,8 @@
   # Screens: autorandr picks a layout by EDID — on hotplug (udev), after
   # suspend, at X start (below) and at session start (qtile autostart). The HP
   # X27c sits right of the laptop and is the primary. A user `autorandr --save
-  # docked` (e.g. after arranging with arandr) lands in ~/.config/autorandr and
-  # overrides the same-named profile here.
+  # docked` lands in ~/.config/autorandr and overrides the same-named profile
+  # here.
   services.autorandr = {
     enable = true;
     defaultTarget = "mobile";

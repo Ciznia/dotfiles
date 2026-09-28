@@ -311,8 +311,9 @@ baseline as-is (`atlas`, `glados`, `pbody`).
 suspend, at X start and at session start. The HDMI port is on the NVIDIA GPU,
 reached through reverse PRIME (`hardware.nvidia.prime.reverseSync`).
 
-To change a layout: arrange it with `arandr`, then `autorandr --save docked
---force`. User profiles in `~/.config/autorandr` override the same-named ones
+To change a layout: arrange it with `xrandr` (arandr is planned with the
+old-config migration; 0.1.11 doesn't build on the pinned nixpkgs), then
+`autorandr --save docked --force`. User profiles in `~/.config/autorandr` override the same-named ones
 from the config. `autorandr --fingerprint` prints the EDIDs for a new screen.
 
 ## Dual boot clock (glados)

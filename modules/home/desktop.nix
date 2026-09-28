@@ -37,7 +37,6 @@ in {
   config = lib.mkIf cfg.enable {
     home.packages = with pkgs; [
       feh # wallpaper
-      arandr # arrange screens by hand, then `autorandr --save <profile>`
       mpv # lock-screen video
       xsecurelock # screen locker
       xss-lock # lock on idle/suspend
