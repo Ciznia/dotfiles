@@ -51,6 +51,10 @@
   };
 
   time.timeZone = "Europe/Paris"; # update when you move
+  # RTC in UTC, like Windows with RealTimeIsUniversal=1 (docs/NIX.md). This
+  # only stops NixOS writing LOCAL: an existing /etc/adjtime still needs
+  # `timedatectl set-local-rtc 0` once.
+  time.hardwareClockInLocalTime = false;
   i18n.defaultLocale = "en_US.UTF-8";
 
   # Keyboard: FR default + US secondary; toggle with Alt+Shift (rebind later).
