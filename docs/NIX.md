@@ -312,8 +312,11 @@ passphrases. `modules/home/agent.nix` runs the Ansible `--tags agent` flow via a
 - Fires **30s after login** and **every 20h** — 4h under the 24h gpg-agent
   `max-cache-ttl`, so a machine left up for days never silently loses the cached
   passphrase (with a window to notice before it would).
-- Presets the gpg passphrase (`gpg-preset-passphrase`) and ssh key (`ssh-add`)
-  straight from the vault.
+- Presets the gpg and ssh passphrases into gpg-agent (`gpg-preset-passphrase`)
+  straight from the vault. gpg-agent is the only agent: it holds the ssh key too.
+
+- Imports the ssh key into gpg-agent on first run, headlessly (see
+  [ANSIBLE.md](ANSIBLE.md#loading-the-key-at-startup)).
 
 Prereqs: keys already deployed (a full `keys.yml` run) and `.vault_pass` present
 at `ciznia.agent.repoPath` (default `~/dotfiles`).

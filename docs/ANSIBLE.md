@@ -24,7 +24,7 @@ ansible/
     group_vars/all/all.vault.yml                # ENCRYPTED secrets
     group_vars/all/all.vault.yml.example        # template (not auto-loaded)
   playbooks/keys.yml                            # SSH + GPG + password store
-  roles/keys/tasks/{ssh,gpg,agent}.yml          # SSH key, rotation-aware GPG, ssh-add
+  roles/keys/tasks/{ssh,gpg,agent}.yml          # SSH key, rotation-aware GPG, agent preset
   roles/pass/                                   # re-encrypt pass store on rotation
 ```
 
@@ -55,7 +55,7 @@ ansible-playbook ansible/playbooks/keys.yml --diff     # show what would change
 | `gpg`      | GPG import **+** pass re-encrypt (a full rotation) |
 | `pass`     | pass re-encrypt only                               |
 | `keys`     | SSH + GPG, no pass                                 |
-| `agent`    | ssh-add the key into the running agent (startup)   |
+| `agent`    | preset gpg/ssh passphrases into gpg-agent (startup) |
 
 ```bash
 ansible-playbook ansible/playbooks/keys.yml --tags ssh
@@ -112,11 +112,11 @@ sync with it. It runs two roles:
     importing) and compares it to the keyring; imports only when they differ,
     then marks the key ultimately trusted. This covers both first install and
     rotation to a new key for the same identity.
-  - *agent* (`--tags agent` only) — loads the SSH key into the running
-    ssh-agent with `ssh-add`, feeding the passphrase from
-    `vault_ssh_passphrase` via an `SSH_ASKPASS` helper so nothing is typed.
-    Idempotent (skips if the key's fingerprint is already in `ssh-add -l`) and
-    tagged `never`, so only an explicit `--tags agent` runs it. See
+  - *agent* (`--tags agent` only) — unlocks the GPG and SSH keys in
+    gpg-agent by presetting `vault_gpg_passphrase` / `vault_ssh_passphrase`
+    on their keygrips, so nothing is typed. The SSH key must have been
+    imported into gpg-agent once. Tagged `never`, so only an explicit
+    `--tags agent` runs it. See
     [Loading the key at startup](#loading-the-key-at-startup).
 - **`pass`** — keeps `~/.password-store` encrypted to the *current* GPG
   fingerprint. It compares the store's `.gpg-id` to the live key and runs
@@ -137,7 +137,6 @@ Variables it uses:
 | `vault_ssh_passphrase`, `vault_gpg_passphrase`         | `all.vault.yml`           | yes     |
 | `ansible_python_interpreter`                           | `host_vars/localhost.yml` | no      |
 | `password_store_dir` (default `~/.password-store`)     | `roles/pass/defaults`     | no      |
-| `ssh_askpass_path` (default `~/.ssh/.ansible-askpass`) | `roles/keys/defaults`     | no      |
 
 > **`pass` prerequisites.** Initialize the store with the **fingerprint**
 > (`pass init <FPR>`), not the email — an email `.gpg-id` always resolves to the
@@ -215,36 +214,34 @@ you want (`gpg --delete-secret-and-public-key <old-fingerprint>`).
 
 #### Loading the key at startup
 
-The `agent` tasks add the SSH key to the running ssh-agent using
-`vault_ssh_passphrase`, so you never type it. Run just that slice:
+gpg-agent is the single source of truth: it holds the GPG keys and, through
+`enableSshSupport`, the SSH key. The `agent` tasks unlock both by presetting
+`vault_gpg_passphrase` and `vault_ssh_passphrase` on their keygrips with
+`gpg-preset-passphrase`, so you never type them. Run just that slice:
 
 ```bash
 ansible-playbook ansible/playbooks/keys.yml --tags agent
 ```
 
-How it works: a throwaway `SSH_ASKPASS` helper (mode `0700`, holds no secret —
-it only echoes `$SSH_PASSPHRASE` from the environment) feeds the passphrase to
-`ssh-add` via `SSH_ASKPASS_REQUIRE=force`, then is deleted. It's idempotent —
-if the key's fingerprint is already in `ssh-add -l`, it does nothing.
+**SSH import, headless.** gpg-agent only holds the SSH key after an `ssh-add`,
+and on that first import it asks its pinentry for a passphrase to protect its
+copy — which needs a terminal. So when the key's keygrip isn't in gpg-agent
+yet, the tasks import it through a throwaway gpg-agent (homedir under
+`/run/user/<uid>`) whose scripted pinentry answers with `vault_ssh_passphrase`,
+copy the protected key file it writes into `~/.gnupg/private-keys-v1.d/`, add
+the keygrip to `~/.gnupg/sshcontrol`, then kill the throwaway agent and delete
+its homedir. The passphrase only ever lives in that agent's environment. Later
+runs find the keygrip and skip straight to the preset.
 
-To run it every login, have your NixOS config invoke that command from the user
-session — e.g. a `systemd` **user** service (or your shell profile). Two things
-that environment must provide:
+On NixOS, `ciznia.agent` (`modules/home/agent.nix`) runs this at login and
+every 20h as a systemd user service — see [NIX.md](NIX.md#key-auto-loading-cizniaagent).
+Whatever runs it must provide:
 
-- **`SSH_AUTH_SOCK`** — the agent must already be running and its socket
-  exported, so `ssh-add` talks to it. (`programs.ssh.startAgent`, a
-  `gpg-agent` with `enableSshSupport`, or a user `ssh-agent` service.)
-- **The vault password** — the run has to decrypt `vault_ssh_passphrase`, so
+- **gpg-agent** with `allow-preset-passphrase` (set in `modules/home/git.nix`).
+- **`PATH`** with coreutils and a shell besides ansible/gnupg/openssh —
+  Ansible's local connection shells out to `mkdir` and friends.
+- **The vault password** — the run has to decrypt the passphrases, so
   `.vault_pass` (or `--ask-vault-pass`) must be reachable by that service.
-
-Sketch of a user service:
-
-```ini
-[Service]
-Type=oneshot
-WorkingDirectory=%h/git/dotfiles
-ExecStart=ansible-playbook ansible/playbooks/keys.yml --tags agent
-```
 
 ## Troubleshooting
 
@@ -258,6 +255,7 @@ ExecStart=ansible-playbook ansible/playbooks/keys.yml --tags agent
   *executable* `vault_password_file` as a script to run. On `/mnt/c` the file is
   often `0777`. Drop the exec bit: `chmod 600 .vault_pass`.
 
-- **`agent` tag does nothing / "No ssh-agent reachable"** — `SSH_AUTH_SOCK`
-  isn't set in the environment running ansible. Start the agent first, or run
-  from a session/service that exports the socket.
+- **"Could not open a connection to your authentication agent"** —
+  `SSH_AUTH_SOCK` isn't set in that shell. home-manager only exports it from
+  shells it manages (`programs.bash.enable` in `modules/home/git.nix`); open a
+  new login shell after switching.
