@@ -223,20 +223,15 @@ gpg-agent is the single source of truth: it holds the GPG keys and, through
 ansible-playbook ansible/playbooks/keys.yml --tags agent
 ```
 
-**One-time SSH import (per machine).** gpg-agent only holds the SSH key after
-an `ssh-add`, and on that first import it asks — through its own pinentry,
-which needs a terminal — for a passphrase to protect its copy. That can't run
-from a headless service, so do it once by hand:
-
-```bash
-gpg-connect-agent updatestartuptty /bye   # point pinentry at this terminal
-ssh-add ~/.ssh/id_ed25519
-```
-
-`ssh-add` asks for the key's passphrase, then gpg-agent asks for a new one:
-**reuse the same passphrase** (`vault_ssh_passphrase`), since that's what the
-tasks preset. The key's keygrip lands in `~/.gnupg/sshcontrol` and stays there;
-until then the `agent` run presets GPG and then fails with the same hint.
+**SSH import, headless.** gpg-agent only holds the SSH key after an `ssh-add`,
+and on that first import it asks its pinentry for a passphrase to protect its
+copy — which needs a terminal. So when the key's keygrip isn't in gpg-agent
+yet, the tasks import it through a throwaway gpg-agent (homedir under
+`/run/user/<uid>`) whose scripted pinentry answers with `vault_ssh_passphrase`,
+copy the protected key file it writes into `~/.gnupg/private-keys-v1.d/`, add
+the keygrip to `~/.gnupg/sshcontrol`, then kill the throwaway agent and delete
+its homedir. The passphrase only ever lives in that agent's environment. Later
+runs find the keygrip and skip straight to the preset.
 
 On NixOS, `ciznia.agent` (`modules/home/agent.nix`) runs this at login and
 every 20h as a systemd user service — see [NIX.md](NIX.md#key-auto-loading-cizniaagent).
@@ -260,6 +255,7 @@ Whatever runs it must provide:
   *executable* `vault_password_file` as a script to run. On `/mnt/c` the file is
   often `0777`. Drop the exec bit: `chmod 600 .vault_pass`.
 
-- **`agent` fails with "isn't in gpg-agent yet"** — the one-time SSH import
-  hasn't been done on this machine; see
-  [Loading the key at startup](#loading-the-key-at-startup).
+- **"Could not open a connection to your authentication agent"** —
+  `SSH_AUTH_SOCK` isn't set in that shell. home-manager only exports it from
+  shells it manages (`programs.bash.enable` in `modules/home/git.nix`); open a
+  new login shell after switching.

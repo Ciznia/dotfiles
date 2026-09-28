@@ -19,9 +19,9 @@ vault_ssh_private_key: |
   ...paste...
   -----END OPENSSH PRIVATE KEY-----
 
-# Passphrase protecting the SSH key above. Also use it when gpg-agent asks to
-# protect its copy on the one-time import: the `agent` tasks preset it there at
-# session startup. Quote it to be safe.
+# Passphrase protecting the SSH key above. The `agent` tasks also protect
+# gpg-agent's copy of the key with it and preset it there at session startup.
+# Quote it to be safe.
 vault_ssh_passphrase: "…the ssh key passphrase…"
 
 # Armored GPG secret key.
