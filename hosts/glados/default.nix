@@ -6,10 +6,11 @@
   imports = [./hardware-configuration.nix];
 
   # Bootloader: lanzaboote (Secure Boot), which replaces systemd-boot rather
-  # than layering on GRUB — see modules/nixos/secureboot.nix. Dual-boot with
-  # Windows doesn't need os-prober here: /boot is the pre-existing Windows ESP
-  # (see hardware-configuration.nix), and systemd-boot auto-discovers any other
-  # *.efi already on that same ESP, Windows Boot Manager included.
+  # than layering on GRUB — see modules/nixos/secureboot.nix. Windows is NOT in
+  # this boot menu: /boot is NixOS's own ESP (nvme0n1p1), while Windows Boot
+  # Manager lives on the other disk's ESP (nvme1n1p1), and systemd-boot only
+  # auto-discovers loaders on its own ESP (there's no os-prober equivalent).
+  # Windows boots from the firmware's boot menu instead (its own UEFI entry).
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "glados";

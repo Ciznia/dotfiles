@@ -84,10 +84,15 @@ greeter** (custom QML theme; default SDDM theme for now). Decisions:
 behind `ciznia.secureBoot.enable` (only `glados`). Lanzaboote **replaces**
 systemd-boot (not GRUB + systemd-boot side by side) — it signs the boot stub and
 each generation's kernel/initrd with a key enrolled into the firmware, so only
-what you signed will boot. This is why GRUB/os-prober is gone from
-`hosts/glados/`: dual-boot with Windows now relies on systemd-boot's own
-auto-discovery of other `*.efi` binaries already on the same ESP (Windows Boot
-Manager included), not on GRUB scanning for other OSes.
+what you signed will boot. GRUB/os-prober is gone from `hosts/glados/`, and
+with it the Windows entry in the boot menu: systemd-boot only auto-discovers
+loaders on **its own** ESP, and on `glados` Windows Boot Manager sits on the
+other disk's ESP (`nvme1n1p1`; NixOS's is `nvme0n1p1`). Windows boots from the
+**firmware boot menu** (its own UEFI entry, untouched by NixOS). The firmware
+timeout is ~1s, so find the boot-menu key (F11/F12/Esc) before switching.
+
+Only 4 generations are kept on the ESP (`configurationLimit`): each one is a
+signed kernel+initrd image of ~50–100M and the ESP is 500M.
 
 **UNTESTED on real hardware.** The `glados-vm` QEMU smoke test does **not**
 exercise this — `system.build.vm` boots the kernel/initrd directly, bypassing
@@ -99,8 +104,14 @@ be expressed in Nix, since the keys are host-specific secrets that must never
 land in the Nix store:
 
 ```bash
+sudo sbctl create-keys                       # FIRST: lanzaboote signs with these
+                                              # keys (/var/lib/sbctl) — without
+                                              # them the switch fails at the
+                                              # bootloader install step
 sudo nixos-rebuild switch --flake .#glados   # installs lanzaboote/systemd-boot
-sudo sbctl create-keys                       # generates keys in /var/lib/sbctl
+sudo sbctl verify                            # boot chain signed?
+reboot                                       # with Secure Boot still OFF: prove
+                                              # the new boot menu works first
 # Reboot into firmware settings, put Secure Boot into "Setup Mode"
 # (steps are vendor-specific — see the lanzaboote docs for your firmware)
 # Boot back into NixOS, then:
@@ -108,10 +119,15 @@ sudo sbctl enroll-keys --microsoft           # --microsoft is REQUIRED for dual-
                                               # without it, Windows Boot Manager
                                               # (signed by Microsoft, not your key)
                                               # is rejected once Secure Boot enforces
+# Turn Secure Boot on in firmware, then:
 reboot
 bootctl status                               # expect: Secure Boot: enabled (user)
-sudo sbctl verify                            # confirms the boot chain is signed
 ```
+
+Once the lanzaboote boot works, the old GRUB files can go (~110M back on the
+ESP): `sudo rm -r /boot/grub /boot/kernels /boot/EFI/NixOS-boot`, plus
+`sudo efibootmgr -b 0001 -B` for the stale `NixOS-boot` entry (check the number
+with `efibootmgr` first). Keep them until then as a fallback.
 
 Have recovery media on hand before this — a bootloader swap on a dual-boot disk
 is the one class of mistake here that's hardest to walk back from a mid-switch

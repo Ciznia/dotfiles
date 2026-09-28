@@ -24,6 +24,10 @@
     boot.lanzaboote = {
       enable = true;
       pkiBundle = "/var/lib/sbctl";
+      # Each generation is a signed UKI (~50-100M) and the ESP is only 500M,
+      # so keep few; older generations stay in the Nix profile, just not in
+      # the boot menu.
+      configurationLimit = 4;
     };
 
     environment.systemPackages = [pkgs.sbctl]; # `sbctl status` / `sbctl verify`
