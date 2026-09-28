@@ -71,6 +71,7 @@
         modules =
           [
             ./hosts/${name}
+            ./modules/nixos
             home-manager.nixosModules.home-manager
             {
               nixpkgs.config.allowUnfree = true;
@@ -130,6 +131,13 @@
         wsl = true;
       };
       glados = mkHost {name = "glados";};
+    };
+
+    # Boot a host in QEMU to smoke-test before touching hardware:
+    #   nix run .#glados-vm     (login: ciznia / test)
+    apps.x86_64-linux.glados-vm = {
+      type = "app";
+      program = "${self.nixosConfigurations.glados.config.system.build.vm}/bin/run-glados-vm";
     };
   };
 }

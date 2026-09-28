@@ -4,3 +4,8 @@
 
 # Any decrypted secret spilled to disk
 *.decrypted
+
+# VM disk images
+*.qcow2
+*.vhd
+*.vhdx
