@@ -29,6 +29,10 @@
       # store and remain reachable with `nixos-rebuild switch --rollback`.
       configurationLimit = 3;
     };
+    # Lanzaboote writes loader.conf from this option. Left on (the NixOS
+    # default), anyone at the boot menu can press `e` and append e.g.
+    # `init=/bin/sh` for a root shell, which bypasses what Secure Boot protects.
+    boot.loader.systemd-boot.editor = false;
 
     environment.systemPackages = [pkgs.sbctl]; # `sbctl status` / `sbctl verify`
   };
