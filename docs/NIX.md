@@ -303,6 +303,19 @@ baseline as-is (`atlas`, `glados`, `pbody`).
    - NixOS → `sudo nixos-rebuild switch --flake .#<name>`
    - Standalone → `home-manager switch --flake .#ciznia@<name>`
 
+## Screens (glados)
+
+`services.autorandr` in `hosts/glados` holds two EDID-matched profiles:
+**docked** (laptop `eDP-1` at 0x0, HP X27c `HDMI-1-0` at 1920x0, primary,
+164.92 Hz) and **mobile** (laptop only). They're applied on hotplug, after
+suspend, at X start and at session start. The HDMI port is on the NVIDIA GPU,
+reached through reverse PRIME (`hardware.nvidia.prime.reverseSync`).
+
+To change a layout: arrange it with `xrandr` (arandr is planned with the
+old-config migration; 0.1.11 doesn't build on the pinned nixpkgs), then
+`autorandr --save docked --force`. User profiles in `~/.config/autorandr` override the same-named ones
+from the config. `autorandr --fingerprint` prints the EDIDs for a new screen.
+
 ## Dual boot clock (glados)
 
 Windows keeps the hardware clock (RTC) in local time by default, NixOS in UTC,
