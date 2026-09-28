@@ -5,26 +5,19 @@
 }: {
   imports = [./hardware-configuration.nix];
 
-  # Dual-boot (NixOS + Windows): GRUB with os-prober to pick up the Windows
-  # entry. (GRUB and systemd-boot are mutually exclusive — pick one.)
-  boot = {
-    loader = {
-      efi.canTouchEfiVariables = true;
-      grub = lib.mkDefault {
-        enable = true;
-        efiSupport = true;
-        device = "nodev";
-        gfxmodeEfi = "1920x1080x32";
-        useOSProber = true;
-      };
-    };
-  };
+  # Bootloader: lanzaboote (Secure Boot), which replaces systemd-boot rather
+  # than layering on GRUB — see modules/nixos/secureboot.nix. Windows is NOT in
+  # this menu: it lives on the other NVMe with its own ESP, and systemd-boot only
+  # lists what's on its own ESP (there's no os-prober). Boot Windows from the
+  # firmware boot menu instead (F11 on this MSI), which keeps its own ESP entry.
+  boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "glados";
   networking.networkmanager.enable = true;
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
   ciznia.desktop.enable = true; # X11 + SDDM + qtile + audio + lock (system half)
+  ciznia.secureBoot.enable = true; # signed boot chain (lanzaboote) — see docs/NIX.md
 
   users.users.${username} = {
     isNormalUser = true;
