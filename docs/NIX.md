@@ -316,6 +316,20 @@ old-config migration; 0.1.11 doesn't build on the pinned nixpkgs), then
 `autorandr --save docked --force`. User profiles in `~/.config/autorandr` override the same-named ones
 from the config. `autorandr --fingerprint` prints the EDIDs for a new screen.
 
+## Login and lock screen (glados)
+
+- **Greeter:** SDDM with `sddm-astronaut` playing `assets/lockscreen.mp4`
+  (silent). `modules/nixos/sddm-astronaut-layout.patch` moves the form to the
+  bottom-left and a small clock to the top-right; the rest is `themeConfig` in
+  `modules/nixos/desktop.nix`. Preview without logging out:
+  `sddm-greeter-qt6 --test-mode --theme /run/current-system/sw/share/sddm/themes/sddm-astronaut-theme`
+  (power buttons are hidden in test mode only). `nixos-rebuild switch` doesn't
+  restart SDDM: a new greeter shows after a reboot.
+- **Lock:** xss-lock + xsecurelock with the same video as saver (mpv per
+  monitor, sound from the first only). Locks at 15 min idle, on suspend and on
+  `loginctl lock-session` (Super+L); the screen turns off 5 min into the lock.
+- **Hibernate:** resumes from the 16G swap partition (`boot.resumeDevice`).
+
 ## Dual boot clock (glados)
 
 Windows keeps the hardware clock (RTC) in local time by default, NixOS in UTC,

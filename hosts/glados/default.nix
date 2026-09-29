@@ -101,6 +101,12 @@
     ${pkgs.autorandr}/bin/autorandr --change --default mobile || true
   '';
 
+  # Hibernate to the 16G swap partition (hardware-configuration.nix). Without a
+  # resume device the image gets written but the next boot ignores it. 16G holds
+  # the compressed in-use memory of the 31G RAM in practice; if hibernation ever
+  # fails for size, the plan is a dedicated 32G swap partition.
+  boot.resumeDevice = "/dev/disk/by-uuid/03cff620-0ce8-437b-95ac-b90dc6a7678f";
+
   time.timeZone = "Europe/Paris"; # update when you move
   # RTC in UTC, like Windows with RealTimeIsUniversal=1 (docs/NIX.md). This
   # only stops NixOS writing LOCAL: an existing /etc/adjtime still needs
@@ -134,6 +140,7 @@
     # The host's real disks aren't in the VM: don't auto-mount /boot, drop swap.
     fileSystems."/boot".options = lib.mkForce ["noauto"];
     swapDevices = lib.mkForce [];
+    boot.resumeDevice = lib.mkForce "";
 
     # SSH into the VM to read logs when the graphical session misbehaves:
     #   ssh ciznia@localhost -p 2222   (password: test)
