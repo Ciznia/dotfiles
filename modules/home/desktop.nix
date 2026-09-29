@@ -9,6 +9,7 @@
   lfsAsset = import ../lib/lfs-asset.nix pkgs;
   wallpaper = lfsAsset ../../assets/wallpaper.jpeg;
   lockVideo = lfsAsset ../../assets/lockscreen.mp4;
+  wpctl = "${pkgs.wireplumber}/bin/wpctl";
 
   # xsecurelock runs this once per monitor, into $XSCREENSAVER_WINDOW. OpenGL +
   # hwdec: mpv's default (gpu-next on Vulkan) takes ~3 s plus shader compiles
@@ -57,6 +58,12 @@ in {
         "XSECURELOCK_DATETIME_FORMAT=%%H:%%M:%%S"
         "\"XSECURELOCK_FONT=JetBrainsMono Nerd Font:size=12\""
         "XSECURELOCK_AUTH_WARNING_COLOR=#d23c3d" # same red as the greeter
+        # The lock grabs the keyboard, so volume keys (Fn+F1..F3) only work if
+        # xsecurelock itself runs them.
+        "\"XSECURELOCK_KEY_XF86AudioMute_COMMAND=${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle\""
+        "\"XSECURELOCK_KEY_XF86AudioLowerVolume_COMMAND=${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%%-\""
+        "\"XSECURELOCK_KEY_XF86AudioRaiseVolume_COMMAND=${wpctl} set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%%+\""
+        "\"XSECURELOCK_KEY_XF86AudioMicMute_COMMAND=${wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle\""
       ];
     };
     # Keep X's own DPMS blanking out of the way: its 10 min default would black
