@@ -1,0 +1,146 @@
+diff -ru a/Components/Clock.qml b/Components/Clock.qml
+--- a/Components/Clock.qml	2026-09-29 09:28:39.763427746 +0200
++++ b/Components/Clock.qml	2026-09-29 09:30:46.247323219 +0200
+@@ -15,9 +15,9 @@
+     Label {
+         id:headerTextLabel
+ 
+-        anchors.horizontalCenter: parent.horizontalCenter
++        anchors.right: parent.right
+ 
+-        font.pointSize: root.font.pointSize * 3
++        font.pointSize: root.font.pointSize * 1.45
+         color: config.HeaderTextColor
+         renderType: Text.QtRendering
+         text: config.HeaderText
+@@ -26,9 +26,9 @@
+     Label {
+         id: timeLabel
+ 
+-        anchors.horizontalCenter: parent.horizontalCenter
++        anchors.right: parent.right
+ 
+-        font.pointSize: root.font.pointSize * 9
++        font.pointSize: root.font.pointSize * 3
+         font.bold: true
+         color: config.TimeTextColor
+         renderType: Text.QtRendering
+@@ -41,10 +41,10 @@
+     Label {
+         id: dateLabel
+ 
+-        anchors.horizontalCenter: parent.horizontalCenter
++        anchors.right: parent.right
+         
+         color: config.DateTextColor
+-        font.pointSize: root.font.pointSize * 2
++        font.pointSize: root.font.pointSize * 1.45
+         font.bold: true
+         renderType: Text.QtRendering
+ 
+diff -ru a/Components/LoginForm.qml b/Components/LoginForm.qml
+--- a/Components/LoginForm.qml	2026-09-29 09:28:39.760802867 +0200
++++ b/Components/LoginForm.qml	2026-09-29 09:33:48.705219032 +0200
+@@ -9,49 +9,41 @@
+ 
+ ColumnLayout {
+     id: formContainer
++    spacing: 0
+     SDDM.TextConstants { id: textConstants }
+ 
+     property int p: config.ScreenPadding == "" ? 0 : config.ScreenPadding
+     property string a: config.FormPosition
+ 
+-    Clock {
+-        id: clock
+-
+-        Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+-        // important
+-        Layout.preferredHeight: root.height / 3
+-        Layout.leftMargin: p != "0" ? a == "left" ? -p : a == "right" ? p : 0 : 0
+-    }
+-
+     Input {
+         id: input
+ 
+         Layout.alignment: Qt.AlignVCenter
+-        Layout.preferredHeight: root.height / 10
++        Layout.preferredHeight: root.font.pointSize * 11
+         Layout.leftMargin: p != "0" ? a == "left" ? -p : a == "right" ? p : 0 : 0
+         Layout.topMargin:  0
+     }
+ 
++    SessionButton {
++        id: sessionSelect
++
++        Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
++        Layout.preferredHeight: root.font.pointSize * 2
++        Layout.maximumHeight: root.font.pointSize * 2
++        Layout.leftMargin: p != "0" ? a == "left" ? -p : a == "right" ? p : 0 : 0
++    }
++
+     SystemButtons {
+         id: systemButtons
+ 
+         Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+-        Layout.preferredHeight: root.height / 5
+-        Layout.maximumHeight: root.height / 5
++        Layout.preferredHeight: root.font.pointSize * 4
++        Layout.maximumHeight: root.font.pointSize * 4
+         Layout.leftMargin: p != "0" ? a == "left" ? -p : a == "right" ? p : 0 : 0
+         
+         exposedSession: input.exposeSession
+     }
+     
+-    SessionButton {
+-        id: sessionSelect
+-
+-        Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+-        Layout.preferredHeight: root.height / 54
+-        Layout.maximumHeight: root.height / 54
+-        Layout.leftMargin: p != "0" ? a == "left" ? -p : a == "right" ? p : 0 : 0
+-    }
+-
+     VirtualKeyboardButton {
+         id: virtualKeyboardButton
+ 
+diff -ru a/Components/SystemButtons.qml b/Components/SystemButtons.qml
+--- a/Components/SystemButtons.qml	2026-09-29 09:33:38.069456621 +0200
++++ b/Components/SystemButtons.qml	2026-09-29 09:33:48.705276911 +0200
+@@ -25,7 +25,7 @@
+ 
+         RoundButton {
+             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+-            Layout.topMargin: root.font.pointSize * 6.5
++            Layout.topMargin: root.font.pointSize * 0.5
+ 
+             text: modelData[1]
+             font.pointSize: root.font.pointSize * 0.8
+diff -ru a/Main.qml b/Main.qml
+--- a/Main.qml	2026-09-29 09:28:39.758208683 +0200
++++ b/Main.qml	2026-09-29 09:33:48.705321083 +0200
+@@ -81,11 +81,22 @@
+             opacity: config.PartialBlur == "true" ? 0.3 : 1
+         }
+ 
++        Clock {
++            id: cornerClock
++
++            anchors.top: parent.top
++            anchors.right: parent.right
++            anchors.margins: parent.height / 30
++            z: 1
++        }
++
+         LoginForm {
+             id: form
+ 
+-            height: parent.height
+-            width: parent.width / 2.5
++            height: implicitHeight
++            anchors.bottom: parent.bottom
++            anchors.bottomMargin: parent.height / 30
++            width: parent.width / 4
+             anchors.left: config.FormPosition == "left" ? parent.left : undefined
+             anchors.horizontalCenter: config.FormPosition == "center" ? parent.horizontalCenter : undefined
+             anchors.right: config.FormPosition == "right" ? parent.right : undefined
