@@ -6,43 +6,62 @@
 }: let
   cfg = config.ciznia.desktop;
 
-  # The assets are Git-LFS tracked. In a clone without git-lfs they are ~130-byte
-  # pointer files, and Nix copies the checkout as-is — feh then fails to load the
-  # wallpaper, X's root window is never painted, and the session looks frozen
-  # (stale SDDM image, windows leaving trails). Fail the build loudly instead.
-  lfsAsset = src:
-    pkgs.runCommandLocal (baseNameOf src) {} ''
-      if head -c 64 ${src} | grep -aq '^version https://git-lfs'; then
-        echo "error: ${baseNameOf src} is a Git LFS pointer, not the real file." >&2
-        echo "Fetch it with 'git lfs install --local && git lfs pull' in the repo, then rebuild." >&2
-        exit 1
-      fi
-      cp ${src} $out
-    '';
-
+  lfsAsset = import ../lib/lfs-asset.nix pkgs;
   wallpaper = lfsAsset ../../assets/wallpaper.jpeg;
   lockVideo = lfsAsset ../../assets/lockscreen.mp4;
 
-  # xsecurelock saver: play the lock video into its window ($XSCREENSAVER_WINDOW).
-  # No --mute / no forced volume, so audio follows the system sink (muted => silent).
+  # xsecurelock runs this once per monitor, into $XSCREENSAVER_WINDOW. OpenGL +
+  # hwdec: mpv's default (gpu-next on Vulkan) takes ~3 s plus shader compiles
+  # before the first frame, and the lock looks blank meanwhile. Sound only from
+  # the first monitor's copy, following the system sink (muted => silent).
   lockSaver = pkgs.writeShellScript "lock-video-saver" ''
+    mute=yes
+    [ "''${XSCREENSAVER_SAVER_INDEX:-0}" = 0 ] && mute=no
     exec ${pkgs.mpv}/bin/mpv --no-config --loop --no-osc --no-terminal \
-      --no-input-default-bindings --wid="$XSCREENSAVER_WINDOW" ${lockVideo}
+      --no-input-default-bindings --mute=$mute \
+      --vo=gpu --gpu-api=opengl --hwdec=auto-safe \
+      --wid="$XSCREENSAVER_WINDOW" ${lockVideo}
   '';
 in {
-  # User half of the graphical stack (qtile session config, wallpaper, video
-  # lock). UNTESTED — verify on real glados.
-  options.ciznia.desktop.enable = lib.mkEnableOption "qtile desktop (session config, wallpaper, video lock)";
+  # User half of the graphical stack (qtile session config, wallpaper, screen
+  # lock). The greeter half is modules/nixos/desktop.nix.
+  options.ciznia.desktop.enable = lib.mkEnableOption "qtile desktop (session config, wallpaper, screen lock)";
 
   config = lib.mkIf cfg.enable {
     home.packages = with pkgs; [
       feh # wallpaper
-      mpv # lock-screen video
-      xsecurelock # screen locker
-      xss-lock # lock on idle/suspend
       rofi # app launcher
       alacritty # terminal
     ];
+
+    # Lock after 15 min idle, on suspend and on `loginctl lock-session` (Super+L):
+    # xss-lock follows the X screensaver timer and logind (xautolock would only
+    # duplicate that timer). The video plays until the screen turns off 5 min
+    # into the lock, i.e. at 20 min idle.
+    services.screen-locker = {
+      enable = true;
+      inactiveInterval = 15;
+      xautolock.enable = false;
+      lockCmd = "${pkgs.xsecurelock}/bin/xsecurelock";
+      lockCmdEnv = [
+        "XSECURELOCK_SAVER=${lockSaver}"
+        "XSECURELOCK_BLANK_TIMEOUT=300"
+        "XSECURELOCK_BLANK_DPMS_STATE=off"
+        # Plain asterisks rather than the default jumping-cursor prompt.
+        "XSECURELOCK_PASSWORD_PROMPT=asterisks"
+        "XSECURELOCK_SHOW_HOSTNAME=0"
+        "XSECURELOCK_SHOW_USERNAME=0"
+        "XSECURELOCK_SHOW_DATETIME=1"
+        # These land in systemd Environment= lines: `%` needs doubling (else it
+        # is a unit specifier) and values with spaces need quotes.
+        "XSECURELOCK_DATETIME_FORMAT=%%H:%%M:%%S"
+        "\"XSECURELOCK_FONT=JetBrainsMono Nerd Font:size=12\""
+        "XSECURELOCK_AUTH_WARNING_COLOR=#d23c3d" # same red as the greeter
+      ];
+    };
+    # Keep X's own DPMS blanking out of the way: its 10 min default would black
+    # the screen before the lock.
+    systemd.user.services.xss-lock.Service.ExecStartPost = "${pkgs.xset}/bin/xset dpms 1260 1260 1260";
 
     xdg.configFile = {
       # Editable qtile config. Its startup hook runs autostart.sh (below), which
@@ -60,9 +79,6 @@ in {
           ${pkgs.autorandr}/bin/autorandr --change --default mobile || true
           # Wallpaper.
           ${pkgs.feh}/bin/feh --no-fehbg --bg-fill ${wallpaper} &
-          # Lock on idle/suspend + on `loginctl lock-session`, with the video saver.
-          XSECURELOCK_SAVER=${lockSaver} XSECURELOCK_BLANK_TIMEOUT=-1 \
-            ${pkgs.xss-lock}/bin/xss-lock -- ${pkgs.xsecurelock}/bin/xsecurelock &
         '';
       };
     };
