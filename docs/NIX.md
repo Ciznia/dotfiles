@@ -1,31 +1,8 @@
 # Nix — system & user configuration
 
-Architecture of the Nix side and how to add a machine. Companion to
-[ANSIBLE.md](ANSIBLE.md), which owns secrets (ssh/gpg/pass). Nix owns everything
-declarative: the OS on NixOS hosts, and the **user environment** (home-manager)
-on every host.
-
-> Status: implemented for `atlas`, `glados` (base system), and `pbody`. The
-> `glados` **desktop stack** (qtile / SDDM / lock) is still to build — see below.
-
-## Principle: standalone-first home config
-
-The home-manager configuration is written as if it always runs **standalone**.
-On NixOS hosts it is embedded into the system build; on non-NixOS hosts
-(Ubuntu + Nix) it is activated on its own. Consequences:
-
-- Home modules use **only** home-manager options (`programs.*`, `home.*`,
-  `xdg.*`, `fonts.*`, and **user** units via `systemd.user.*`) — never a NixOS
-  option. Anything needing **system-level** config — *system* services
-  (`services.*`, `systemd.services`), the qtile X session, GPU drivers — lives in
-  `modules/nixos/` and simply doesn't exist on standalone hosts; the base distro
-  provides that layer.
-  - Note the user/system split: the agent loader is a `systemd.user` timer (a
-    home option, so it's portable), while things like GPU drivers or the
-    nixos-wsl module are system-level and live in the host config.
-- A non-NixOS host opts into a small **standalone contract** (below).
-
-This keeps the user environment portable to any future non-NixOS machine.
+Nix owns everything declarative: the OS on NixOS hosts, and the **user
+environment** (home-manager) on every host. Secrets (ssh/gpg/pass) belong to
+[ANSIBLE.md](ANSIBLE.md).
 
 ## Hosts
 
@@ -36,99 +13,8 @@ This keeps the user environment portable to any future non-NixOS machine.
 | `pbody`                   | Desktop, Windows side        | Ubuntu + Nix | **standalone** |
 
 `glados` and `atlas` are the **same physical laptop** — native-NixOS boot vs.
-Windows + NixOS-WSL. `pbody` is the separate desktop (currently offline).
-`wheatley` is **reserved** for that desktop's future *native NixOS*. Names are
-Portal-themed (`atlas`/`pbody` = the Co-op bots).
-
-### Desktop stack (`glados`)
-
-`hosts/glados/` has the base — lanzaboote (Secure Boot), NVIDIA PRIME offload,
-FR/US keyboard. A **first cut of the graphical stack is implemented** (X11 + SDDM
-+ qtile + wallpaper + video lock) across `modules/nixos/desktop.nix` and
-`modules/home/desktop.nix`, gated by `ciznia.desktop.enable` (only `glados`).
-Verified booting in the `glados-vm` QEMU smoke test (wallpaper + video lock
-render on X11); real hardware not yet confirmed. Still TODO: the SDDM **video
-greeter** (custom QML theme; default SDDM theme for now). Decisions:
-
-- **Display server:** X11. Wayland is a later migration — NVIDIA laptop-hybrid
-  \+ qtile's more mature X11 backend make X11 the pragmatic first target.
-- **WM:** qtile (X11 backend).
-- **Greeter:** SDDM (default theme for now). TODO: custom QML theme playing
-  `assets/lockscreen.mp4`, audio **muted** (pre-login has no user session whose
-  mute state to follow).
-- **Lock:** `xsecurelock` running `mpv` (looping `assets/lockscreen.mp4`), wired
-  to idle/suspend via `xss-lock`. Audio goes through the user's sink, so it
-  **follows the system mute** automatically (no `--mute`, no forced volume).
-- **Wallpaper:** `assets/wallpaper.jpeg` (4K source, downscaled to the FHD panel).
-- **GPU:** NVIDIA RTX 4060 Laptop (hybrid). `hardware.nvidia.prime` in
-  **offload** mode (iGPU drives the display; dGPU on demand via `prime-run`):
-  - `intelBusId  = "PCI:0:2:0";`
-  - `nvidiaBusId = "PCI:1:0:0";`
-  (verify with `lspci -nnk | grep -EA3 'VGA|3D'` if a driver update misbehaves).
-- **Assets** live in `assets/` and are **Git-LFS** tracked. Nix builds from the
-  checkout as-is, so a clone made without git-lfs feeds ~130-byte pointer files
-  to the desktop: feh can't load the wallpaper, X's root window (SDDM starts it
-  with no background) is never repainted, and the session *looks* frozen — the
-  SDDM image stays up and windows leave trails, though input still works.
-  Guards: `ciznia.git` enables `programs.git.lfs` (git-lfs + its global filter,
-  so new clones/pulls get the real files); `modules/home/desktop.nix` fails the
-  build if an asset is still a pointer; and autostart paints a solid root
-  background before feh. To fix an existing clone:
-  `git lfs install --local && git lfs pull`. (`inputs.self.lfs = true` doesn't
-  help here: it only applies when Nix fetches the repo itself, not a local
-  `--flake .` checkout, and a failed LFS fetch silently falls back to pointers.)
-
-### Secure Boot (`glados`)
-
-`modules/nixos/secureboot.nix` wires [lanzaboote](https://github.com/nix-community/lanzaboote)
-behind `ciznia.secureBoot.enable` (only `glados`). Lanzaboote **replaces**
-systemd-boot (not GRUB + systemd-boot side by side) — it signs the boot stub and
-each generation's kernel/initrd with a key enrolled into the firmware, so only
-what you signed will boot. This is why GRUB/os-prober is gone from
-`hosts/glados/`. systemd-boot has no os-prober: it only lists `*.efi` binaries
-on its own ESP, and Windows on glados sits on the other NVMe with its own ESP.
-So the menu shows NixOS generations only, and Windows is booted from the
-firmware boot menu (**F11** on this MSI), which keeps Windows' own, always
-up-to-date boot entry. `configurationLimit = 3` keeps the 500M ESP from filling.
-
-**UNTESTED on real hardware.** The `glados-vm` QEMU smoke test does **not**
-exercise this — `system.build.vm` boots the kernel/initrd directly, bypassing
-the real bootloader and any signing/enrollment entirely (true for the old GRUB
-config too). Only a real boot proves Secure Boot actually works.
-
-Key enrollment is a **one-time, imperative, on-the-machine** process — it can't
-be expressed in Nix, since the keys are host-specific secrets that must never
-land in the Nix store:
-
-```bash
-# 1. Keys FIRST: lanzaboote signs with /var/lib/sbctl at install time, so a
-#    switch without them fails at the bootloader step. sbctl isn't installed
-#    until the switch, hence `nix run`.
-sudo nix run nixpkgs#sbctl -- create-keys    # generates keys in /var/lib/sbctl
-
-# 2. Install lanzaboote with Secure Boot still OFF in the firmware, and check
-#    that NixOS boots from the new systemd-boot menu and Windows from F11.
-sudo nixos-rebuild switch --flake .#glados
-reboot
-sudo sbctl verify                            # kernel-* files unsigned is expected
-
-# 3. Reboot into firmware settings, put Secure Boot into "Setup Mode"
-#    (steps are vendor-specific — see the lanzaboote docs for your firmware).
-#    Boot back into NixOS, then:
-sudo sbctl enroll-keys --microsoft           # --microsoft is REQUIRED for dual-boot:
-                                              # without it, Windows Boot Manager
-                                              # (signed by Microsoft, not your key)
-                                              # is rejected once Secure Boot enforces
-# 4. Turn Secure Boot on in the firmware, then:
-bootctl status                               # expect: Secure Boot: enabled (user)
-```
-
-Have recovery media on hand before this — a bootloader swap on a dual-boot disk
-is the one class of mistake here that's hardest to walk back from a mid-switch
-failure. Full walkthrough (device-specific Setup Mode steps, Framework/ThinkPad/
-Surface quirks): <https://nix-community.github.io/lanzaboote/>.
-
-Activation:
+Windows + NixOS-WSL. `wheatley` is **reserved** for the desktop's future
+*native NixOS*. Names are Portal-themed (`atlas`/`pbody` = the Co-op bots).
 
 ```bash
 sudo nixos-rebuild switch --flake .#glados      # native NixOS
@@ -136,156 +22,38 @@ sudo nixos-rebuild switch --flake .#atlas       # NixOS-WSL
 home-manager    switch --flake .#ciznia@pbody   # Ubuntu + Nix (standalone)
 ```
 
-## The standalone contract (non-NixOS hosts)
+## Principle: standalone-first home config
 
-A `type = "home"` recipe opts into the bits NixOS would otherwise provide:
-
-```nix
-# home/pbody.nix (illustrative)
-{ ... }: {
-  imports = [ ./base.nix ];
-  targets.genericLinux.enable = true;   # locale + XDG + nix-profile integration on Ubuntu
-  home.username      = "ciznia";
-  home.homeDirectory = "/home/ciznia";
-  home.stateVersion  = "26.05";
-}
-```
-
-`targets.genericLinux.enable` is the essential one — without it you get locale
-warnings and nix-installed apps that don't integrate with the host. `allowUnfree`
-and the stable overlay are applied where the standalone `pkgs` is built (in
-`mkHome`), since standalone HM constructs its own `pkgs`.
-
-## Inputs & channels
-
-Unstable is primary; stable (26.05) is pinned as a fallback, exposed through an
-overlay as `pkgs.stable.*` for when an unstable package is broken.
-
-```nix
-inputs = {
-  nixpkgs.url        = "github:NixOS/nixpkgs/nixos-unstable";   # primary
-  nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-26.05";      # pinned fallback
-  home-manager = { url = "github:nix-community/home-manager"; inputs.nixpkgs.follows = "nixpkgs"; };
-  nixos-wsl    = { url = "github:nix-community/NixOS-WSL";     inputs.nixpkgs.follows = "nixpkgs"; };
-  lanzaboote   = { url = "github:nix-community/lanzaboote/v1.1.0"; inputs.nixpkgs.follows = "nixpkgs"; };
-};
-# overlay: final: prev: { stable = import nixpkgs-stable { inherit (prev) system; config.allowUnfree = true; }; }
-```
-
-Use unstable by default; reach for `pkgs.stable.<name>` only when the unstable
-build is broken. (Unstable requires tracking home-manager `master`, as above.)
-
-## Layout
-
-```txt
-flake.nix            # inputs + inline helpers (mkPkgs/mkHome/mkHost, stable overlay) + outputs
-flake.lock
-hosts/
-  atlas/default.nix                 # NixOS-WSL system
-  glados/default.nix                # lanzaboote, NVIDIA offload, keyboard
-  glados/hardware-configuration.nix
-modules/nixos/       # the system toolbox (gated ciznia.* modules)
-  default.nix        # aggregator (imported into every host by mkHost)
-  desktop.nix        # ciznia.desktop — X11 + SDDM + qtile + audio + lock (system)
-  secureboot.nix  # ciznia.secureBoot — lanzaboote Secure Boot (system)
-modules/home/        # the home toolbox (gated ciznia.* modules)
-  default.nix        # aggregator
-  git.nix            # ciznia.git — git + gpg + gpg-agent (one flag)
-  agent.nix          # ciznia.agent — auto-load keys from the vault (systemd timer)
-  desktop.nix        # ciznia.desktop — qtile config, wallpaper, video lock (home)
-  qtile/config.py    # qtile session config (editable starting point)
-home/                # the recipes (per-host assembly)
-  base.nix           # shared baseline (mkDefault flags)
-  atlas.nix          # NixOS-WSL
-  glados.nix         # native NixOS + desktop
-  pbody.nix          # Ubuntu+Nix standalone
-scripts/
-  test-nixos-wsl.ps1 # throwaway-instance bootstrap test (Windows)
-assets/              # wallpaper + lockscreen video (Git-LFS)
-docs/                # NIX.md, ANSIBLE.md, README.md
-```
-
-The `mkHost` / `mkHome` helpers and the `stable` overlay currently live inline
-in `flake.nix`; extracting them to `lib/` + `overlays/` is a later cleanup.
-`modules/nixos/` is imported into every host by `mkHost`; its modules are gated,
-so only `glados` activates the desktop.
+The home-manager configuration is written as if it always runs **standalone**:
+embedded into the system build on NixOS hosts, activated on its own on
+non-NixOS hosts. So home modules use **only** home-manager options
+(`programs.*`, `home.*`, `xdg.*`, user units via `systemd.user.*`). Anything
+system-level — system services, the X session, GPU drivers — lives in
+`modules/nixos/` or the host config, and the base distro provides it on
+standalone hosts.
 
 ## Everything is a gated feature (`ciznia.*` options)
 
-Every module — nixos and home — has the same shape: it **defines an enable
-option and gates its `config` behind it**. Modules are imported *everywhere*;
-their `config` only activates when the flag is on.
-
-```nix
-# modules/home/zsh.nix — the uniform template
-{ config, lib, pkgs, ... }: {
-  options.ciznia.zsh.enable = lib.mkEnableOption "zsh shell";
-  config = lib.mkIf config.ciznia.zsh.enable {
-    programs.zsh.enable = true;
-    # …plugins, aliases, etc.
-  };
-}
-```
-
-Two folders, two jobs:
+Every module, nixos and home, defines a `ciznia.<feature>.enable` option and
+gates its `config` behind it. Modules are imported everywhere and stay inert
+until a flag is on.
 
 - **`modules/{home,nixos}/` = the toolbox** — each feature defined once,
-  host-agnostic, gated by a `ciznia.*` flag.
-- **`home/` (and `hosts/`) = the recipes** — per-host assembly that flips flags
-  on/off and sets host-specific values.
+  host-agnostic.
+- **`home/` and `hosts/` = the recipes** — per-host assembly that flips flags
+  and sets host-specific values.
 
-### Shared vs override — and disabling a shared module
-
-`home/base.nix` sets the shared baseline with **`lib.mkDefault`**, which is what
-lets a host **override — including disable —** any of it:
-
-```nix
-# home/base.nix — shared baseline
-{ lib, ... }: {
-  imports = [ ../modules/home ];            # all home modules (gated, inert until enabled)
-  ciznia.git.enable   = lib.mkDefault true; # shared: on by default…
-  ciznia.agent.enable = lib.mkDefault true;
-}
-
-# a host that doesn't want the vault auto-loader (e.g. no vault there yet)
-{ lib, ... }: {
-  imports = [ ./base.nix ];
-  ciznia.agent.enable = false;              # …disabled here (plain value beats mkDefault)
-}
-```
-
-So yes: because shared defaults use `mkDefault`, any host can switch a shared
-feature **off** with a plain `= false`.
-
-> **Gotcha.** This only works with `mkDefault` in the base. If the base set a
-> bare `= true`, a host's `= false` is a *conflict*, not an override. Use
-> `lib.mkForce` only for the rare case of overriding a non-default value that an
-> upstream (non-`ciznia`) module already set.
-
-Host-only features (the GUI/qtile stack) skip the base entirely: their flag
-defaults to `false` (via `mkEnableOption`), and only `glados` sets
-`ciznia.desktop.enable = true`.
-
-### The home modules, concretely
-
-- `modules/home/git.nix` (`ciznia.git`) — git identity + commit signing, plus
-  the `programs.gpg` and `services.gpg-agent` it depends on (one flag: signed
-  commits need the key, the agent, and a pinentry). gpg-agent also serves ssh
-  (`enableSshSupport`).
-- `modules/home/agent.nix` (`ciznia.agent`) — auto-loads the ssh/gpg keys from
-  the vault at login and every 20h (see below).
-- Shells, editor, and the desktop stack land here later as their own gated
-  modules.
-
-`base.nix` enables `git` + `agent` by default; every host currently takes the
-baseline as-is (`atlas`, `glados`, `pbody`).
+`home/base.nix` sets the shared baseline with **`lib.mkDefault`**, so any host
+can turn a shared feature off with a plain `= false`. Without `mkDefault`, a
+host's `= false` would be a conflict, not an override. Host-only features (the
+desktop) default to off and are enabled by their host.
 
 ## Adding a new system
 
 1. **Write the recipe** — `home/<name>.nix`: `imports = [ ./base.nix ]`, flip any
    `ciznia.*` flags, set host-specific values.
-2. **Pick the mode** and register it in `flake.nix`:
-   - **NixOS** → add `hosts/<name>/default.nix` (+ a `hardware-configuration.nix`
+2. **Register it** in `flake.nix`:
+   - **NixOS** → add `hosts/<name>/default.nix` (+ `hardware-configuration.nix`
      from `nixos-generate-config`; nothing extra for WSL beyond `wsl = true`):
 
      ```nix
@@ -293,113 +61,151 @@ baseline as-is (`atlas`, `glados`, `pbody`).
      ```
 
    - **Non-NixOS** → add the standalone contract to `home/<name>.nix`
-     (`targets.genericLinux.enable`, `home.homeDirectory`):
+     (`targets.genericLinux.enable`, `home.username`, `home.homeDirectory`,
+     see `home/pbody.nix`):
 
      ```nix
      homeConfigurations."ciznia@<name>" = mkHome { modules = [ ./home/<name>.nix ]; };
      ```
 
-3. **Build:**
-   - NixOS → `sudo nixos-rebuild switch --flake .#<name>`
-   - Standalone → `home-manager switch --flake .#ciznia@<name>`
+3. **Build** with the matching command under [Hosts](#hosts).
 
-## Screens (glados)
+`targets.genericLinux.enable` is the essential part of the standalone contract:
+without it you get locale warnings and nix-installed apps that don't integrate
+with the host.
 
-`services.autorandr` in `hosts/glados` holds two EDID-matched profiles:
-**docked** (laptop `eDP-1` at 0x0, HP X27c `HDMI-1-0` at 1920x0, primary,
-164.92 Hz) and **mobile** (laptop only). They're applied on hotplug, after
-suspend, at X start and at session start. The HDMI port is on the NVIDIA GPU,
-reached through reverse PRIME (`hardware.nvidia.prime.reverseSync`).
+## Channels
 
-To change a layout: arrange it with `xrandr` (arandr is planned with the
-old-config migration; 0.1.11 doesn't build on the pinned nixpkgs), then
-`autorandr --save docked --force`. User profiles in `~/.config/autorandr` override the same-named ones
-from the config. `autorandr --fingerprint` prints the EDIDs for a new screen.
+Unstable is primary (home-manager tracks `master` to match). Stable 26.05 is
+pinned as a fallback, exposed as `pkgs.stable.<name>` for when an unstable
+package is broken.
 
-## Login and lock screen (glados)
+## glados
+
+### Desktop
+
+X11 + SDDM + qtile + PipeWire, gated by `ciznia.desktop.enable`
+(`modules/nixos/desktop.nix` for the system half, `modules/home/desktop.nix`
+for the user half). X11 rather than Wayland because of the NVIDIA hybrid GPU
+and qtile's more mature X11 backend; the Wayland qtile session is removed so
+SDDM can't pick it.
+
+- **GPU:** NVIDIA RTX 4060 in PRIME **offload** mode: the iGPU drives the panel,
+  `nvidia-offload <cmd>` runs a program on the dGPU. Bus IDs `PCI:0:2:0` (Intel)
+  and `PCI:1:0:0` (NVIDIA); check with `lspci -nnk | grep -EA3 'VGA|3D'` if a
+  driver update misbehaves.
+- **Assets** (`assets/`) are **Git-LFS** tracked. Nix builds the checkout as-is,
+  so a clone without git-lfs feeds pointer files to the desktop: the wallpaper
+  never paints and the session *looks* frozen. The build fails on a pointer
+  instead; fix the clone with `git lfs install --local && git lfs pull`.
+
+### Screens
+
+`services.autorandr` holds two EDID-matched profiles: **docked** (laptop `eDP-1`
+at 0x0, HP X27c `HDMI-1-0` at 1920x0, primary, 164.92 Hz) and **mobile**
+(laptop only). They apply on hotplug, after suspend, at X start and at session
+start. The HDMI port is on the NVIDIA GPU, reached through reverse PRIME.
+
+To change a layout: arrange it with `xrandr`, then
+`autorandr --save docked --force`. Profiles in `~/.config/autorandr` override
+the same-named ones from the config. `autorandr --fingerprint` prints the EDIDs
+for a new screen.
+
+### Login and lock screen
 
 - **Greeter:** SDDM with `sddm-astronaut` playing `assets/lockscreen.mp4`
   (silent). `modules/nixos/sddm-astronaut-layout.patch` moves the form to the
-  bottom-left and a small clock to the top-right; the rest is `themeConfig` in
-  `modules/nixos/desktop.nix`. Preview without logging out:
+  bottom-left and a small clock to the top-right. Preview without logging out:
   `sddm-greeter-qt6 --test-mode --theme /run/current-system/sw/share/sddm/themes/sddm-astronaut-theme`
   (power buttons are hidden in test mode only). `nixos-rebuild switch` doesn't
   restart SDDM: a new greeter shows after a reboot.
-- **Lock:** xss-lock + xsecurelock with the same video as saver (mpv per
-  monitor, sound from the first only). Locks at 15 min idle, on suspend and on
-  `loginctl lock-session` (Super+L); the screen turns off 5 min into the lock.
+- **Lock:** xss-lock + xsecurelock with the same video (mpv per monitor, sound
+  from the first only, following the system volume). Locks at 15 min idle, on
+  suspend and on `loginctl lock-session` (Super+L); the screen turns off 5 min
+  into the lock. Volume and mic-mute keys work while locked.
 - **Hibernate:** resumes from the 16G swap partition (`boot.resumeDevice`).
 
-## Dual boot clock (glados)
+### Dual boot clock
 
-Windows keeps the hardware clock (RTC) in local time by default, NixOS in UTC,
-so the clock is off by the UTC offset after every switch between them. Keep
-it in UTC on both sides:
+Windows keeps the hardware clock in local time by default, NixOS in UTC. Both
+sides use UTC here:
 
-- NixOS: `time.hardwareClockInLocalTime = false` (hosts/glados). An
-  `/etc/adjtime` that already says `LOCAL` isn't rewritten by that, so run
-  `sudo timedatectl set-local-rtc 0` once.
+- NixOS: `time.hardwareClockInLocalTime = false`. An `/etc/adjtime` that
+  already says `LOCAL` isn't rewritten by it: run `sudo timedatectl set-local-rtc 0`
+  once (or delete `/etc/adjtime`).
 - Windows, admin prompt, then reboot:
   `reg add "HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" /v RealTimeIsUniversal /t REG_DWORD /d 1 /f`
 
+### Secure Boot
+
+`modules/nixos/secureboot.nix` wires [lanzaboote](https://github.com/nix-community/lanzaboote)
+behind `ciznia.secureBoot.enable`. Lanzaboote replaces systemd-boot and signs
+the boot stub and each generation with keys enrolled in the firmware. Windows
+isn't in the menu (it has its own ESP on the other NVMe, and systemd-boot has
+no os-prober): boot it from the firmware menu (**F11**).
+
+Enrollment is one-time and imperative, since the keys must never reach the Nix
+store. To redo it (e.g. after a reinstall):
+
+```bash
+# 1. Keys first: lanzaboote signs at install time, so a switch without them fails.
+sudo nix run nixpkgs#sbctl -- create-keys
+
+# 2. Switch with Secure Boot still off, reboot, check NixOS and Windows (F11) boot.
+sudo nixos-rebuild switch --flake .#glados
+sudo sbctl verify
+
+# 3. Put the firmware in Setup Mode (below), boot NixOS, then enroll.
+#    --microsoft is required: Windows Boot Manager is signed by Microsoft.
+sudo sbctl enroll-keys --microsoft
+
+# 4. Turn Secure Boot on in the firmware, then:
+bootctl status                    # expect: Secure Boot: enabled (user)
+```
+
+**Setup Mode on this MSI:** the option is in a hidden BIOS menu. Inside the
+BIOS, press **right Ctrl + right Shift + left Alt + F2**; the Copilot key works
+as right Ctrl. Then, under Secure Boot, use Reset To Setup Mode.
+
 ## Key auto-loading (`ciznia.agent`)
 
-Signed commits and ssh need the keys unlocked in the agent — without typing
-passphrases. `modules/home/agent.nix` runs the Ansible `--tags agent` flow via a
-**systemd user service + timer**:
+`modules/home/agent.nix` runs the Ansible `--tags agent` flow as a systemd user
+service, 30s after login and every 20h (under the 24h gpg-agent cache TTL). It
+unlocks the gpg and ssh keys in gpg-agent from the vault, so nothing is typed;
+details in [ANSIBLE.md](ANSIBLE.md#loading-the-key-at-startup). It needs
+`.vault_pass` at `ciznia.agent.repoPath` (default `~/dotfiles`).
 
-- Fires **30s after login** and **every 20h** — 4h under the 24h gpg-agent
-  `max-cache-ttl`, so a machine left up for days never silently loses the cached
-  passphrase (with a window to notice before it would).
-- Presets the gpg and ssh passphrases into gpg-agent (`gpg-preset-passphrase`)
-  straight from the vault. gpg-agent is the only agent: it holds the ssh key too.
+**WSL needs lingering.** `wsl` shells never start a systemd *user* instance, so
+without `users.users.<name>.linger = true` (set on atlas) neither gpg-agent nor
+this timer runs. Linger makes the first `nixos-rebuild switch` exit nonzero;
+the system still switches, and `wsl --terminate atlas` + reopen brings it up.
 
-- Imports the ssh key into gpg-agent on first run, headlessly (see
-  [ANSIBLE.md](ANSIBLE.md#loading-the-key-at-startup)).
+## Testing
 
-Prereqs: keys already deployed (a full `keys.yml` run) and `.vault_pass` present
-at `ciznia.agent.repoPath` (default `~/dotfiles`).
-
-**WSL needs lingering.** `wsl` shell sessions never start a systemd *user*
-instance (no login/PAM session → no user bus), so without
-`users.users.<name>.linger = true` (set on atlas) *none* of the home-manager
-user services — gpg-agent **or** this timer — run at all. Caveat: linger makes
-the first `nixos-rebuild switch` exit nonzero (user@UID can't start
-mid-activation); the system still switches, and `wsl --terminate` + reopen brings
-it up cleanly. Native hosts (glados) get the user instance from the graphical
-login, so no linger is needed there.
-
-## Testing on a throwaway instance
-
-**Fresh NixOS-WSL bootstrap** — `scripts/test-nixos-wsl.ps1` (run from **Windows
-PowerShell**) imports a clean NixOS-WSL, clones the repo, runs the keys playbook,
-and `nixos-rebuild switch`es to a host — deleting the instance if any step fails.
-Push your branch first.
+**Fresh NixOS-WSL bootstrap** — `scripts/test-nixos-wsl.ps1` (Windows
+PowerShell) imports a clean NixOS-WSL, clones the repo, runs the keys playbook
+and switches to a host, deleting the instance if any step fails. Push the
+branch first:
 
 ```powershell
 ./scripts/test-nixos-wsl.ps1 -Branch <branch>
 ```
 
-**Graphical VM** — `glados` exposes a QEMU VM (via `virtualisation.vmVariant`) so
-the desktop can be smoke-tested before touching hardware. The VM swaps NVIDIA for
-the modesetting driver, drops the host's real disks, and gives `ciznia` a
-throwaway password:
+**Graphical VM** — boots `glados` in QEMU with modesetting instead of NVIDIA,
+no host disks, and a throwaway password. It doesn't exercise Secure Boot or the
+real bootloader.
 
 ```bash
-nix run .#glados-vm          # login: ciznia / test
-# or: nixos-rebuild build-vm --flake .#glados && ./result/bin/run-glados-vm
+nix run .#glados-vm               # login: ciznia / test
+ssh ciznia@localhost -p 2222      # logs, when the session misbehaves
 ```
 
-Runs from WSL (WSLg shows the QEMU window) or any Linux; slow without nested KVM.
-The VM runs sshd with a host port-forward, so you can read logs even when the
-graphical session misbehaves: `ssh ciznia@localhost -p 2222` (password `test`).
-To also exercise the agent timer inside the VM, clone the repo to `~/dotfiles`
-and drop `.vault_pass` in first (otherwise `agent-preload` has nothing to read).
+Runs from WSL (WSLg shows the window) or any Linux; slow without nested KVM.
+For the agent timer inside the VM, clone the repo to `~/dotfiles` and add
+`.vault_pass` first.
 
 ## Secrets boundary
 
-Nix stays secret-free: it declares config and may *reference* non-secret
-identity (git `userEmail`, the signing-key fingerprint, default shell). Key
-material (ssh/gpg/pass) is provisioned by the Ansible preflight — see
-[ANSIBLE.md](ANSIBLE.md). Declarative Nix secrets (sops-nix / agenix) are a
-possible later addition, out of scope for now.
+Nix stays secret-free: it may reference non-secret identity (git email, the
+signing-key fingerprint), never key material. Keys are provisioned by the
+Ansible preflight.

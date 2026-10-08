@@ -51,9 +51,7 @@
         overlays = [stableOverlay];
       };
 
-    # Standalone home-manager (non-NixOS hosts). NixOS hosts will embed the same
-    # home/<host>.nix via home-manager.nixosModules instead — added once the
-    # machines' hardware/WSL configs are available (see docs/NIX.md).
+    # Standalone home-manager (non-NixOS hosts).
     mkHome = {
       system ? "x86_64-linux",
       modules,

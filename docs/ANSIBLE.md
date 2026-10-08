@@ -8,28 +8,9 @@ restoring the shared **SSH** and **GPG** identity onto a machine.
 Everything targets `localhost` (`connection: local`) — Ansible here provisions
 the machine you invoke it on, not remote hosts.
 
-## Layout
-
-`ansible.cfg` and `.vault_pass` live at the **repo root**; everything else is
-under `ansible/`, laid out per-inventory. Run every command **from the repo root**.
-
-```txt
-ansible.cfg                                     # repo root: inventory, roles_path, vault
-.vault_pass                                     # repo root: vault password (git-ignored)
-ansible/
-  inventories/local/
-    hosts.yml                                   # localhost, connection: local
-    host_vars/localhost.yml                     # pins ansible_python_interpreter
-    group_vars/all/all.yml                      # non-secret vars (public key, email…)
-    group_vars/all/all.vault.yml                # ENCRYPTED secrets
-    group_vars/all/all.vault.yml.example        # template (not auto-loaded)
-  playbooks/keys.yml                            # SSH + GPG + password store
-  roles/keys/tasks/{ssh,gpg,agent}.yml          # SSH key, rotation-aware GPG, agent preset
-  roles/pass/                                   # re-encrypt pass store on rotation
-```
-
-`ansible.cfg` points at `inventories/local/hosts.yml`, so its `group_vars` /
-`host_vars` auto-load.
+Run every command **from the repo root**: `ansible.cfg` and the git-ignored
+`.vault_pass` live there, and `ansible.cfg` points at
+`ansible/inventories/local/hosts.yml`, so its `group_vars`/`host_vars` auto-load.
 
 ## Running a playbook
 
@@ -183,7 +164,7 @@ change and reconcile the host.
 **SSH** — generate a new keypair, update both halves, re-run:
 
 ```bash
-ssh-keygen -t ed25519 -C "gabriel@ciznia" -f ./id_ed25519
+ssh-keygen -t ed25519 -C "hosquetgabriel@gmail.com" -f ./id_ed25519
 ansible-vault edit ansible/inventories/local/group_vars/all/all.vault.yml   # replace vault_ssh_private_key
 # update ssh_public_key in all.yml to the new .pub
 ansible-playbook ansible/playbooks/keys.yml --tags ssh                      # overwrites ~/.ssh/id_ed25519
