@@ -16,7 +16,10 @@ The setup leans on **two tools**:
 
 - [Nix](https://nixos.org/download) with flakes enabled
   (`experimental-features = nix-command flakes`).
-- [git-lfs](https://git-lfs.com/) for the wallpaper and lock video.
+
+Everything else (ansible, gpg, git-lfs, …) comes from `nix develop`. The
+wallpaper and lock video are Git-LFS tracked: in a clone made without git-lfs,
+run `git lfs install --local && git lfs pull` inside the dev shell.
 
 ## Usage
 
