@@ -29,8 +29,7 @@
   # the dGPU runs on demand via the `nvidia-offload` wrapper. "nvidia" must be
   # listed: NixOS only enables the hardware.nvidia block below when it is (with
   # just "modesetting", nouveau grabbed the dGPU), and with offload it sets up
-  # modesetting for the iGPU itself. The old post-login "freeze" blamed on this
-  # was the LFS-pointer wallpaper (commit 1eb7fcc), not the driver.
+  # modesetting for the iGPU itself.
   services.xserver.videoDrivers = ["nvidia"];
   hardware = {
     graphics.enable = true;
@@ -114,7 +113,7 @@
   time.hardwareClockInLocalTime = false;
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # Keyboard: FR default + US secondary; toggle with Alt+Shift (rebind later).
+  # Keyboard: FR default + US secondary; toggle with Alt+Shift.
   services.xserver.xkb = {
     layout = "fr,us";
     options = "grp:alt_shift_toggle";
