@@ -17,6 +17,21 @@
       url = "github:nix-community/lanzaboote/v1.1.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    catppuccin = {
+      url = "github:catppuccin/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -26,6 +41,8 @@
     home-manager,
     nixos-wsl,
     lanzaboote,
+    catppuccin,
+    git-hooks,
     ...
   } @ inputs: let
     inherit (nixpkgs) lib;
@@ -39,7 +56,7 @@
     # when an unstable package is broken.
     stableOverlay = final: prev: {
       stable = import nixpkgs-stable {
-        inherit (prev) system;
+        inherit (prev.stdenv.hostPlatform) system;
         config.allowUnfree = true;
       };
     };
@@ -59,7 +76,7 @@
       home-manager.lib.homeManagerConfiguration {
         pkgs = mkPkgs system;
         extraSpecialArgs = {inherit inputs username;};
-        inherit modules;
+        modules = [catppuccin.homeModules.catppuccin] ++ modules;
       };
 
     # Integrated NixOS host (native or WSL). Embeds the same home/<name>.nix via
@@ -76,6 +93,7 @@
           [
             ./hosts/${name}
             ./modules/nixos
+            catppuccin.nixosModules.catppuccin
             home-manager.nixosModules.home-manager
             {
               nixpkgs.config.allowUnfree = true;
@@ -83,6 +101,7 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.extraSpecialArgs = {inherit inputs username;};
+              home-manager.sharedModules = [catppuccin.homeModules.catppuccin];
               home-manager.users.${username} = import ./home/${name}.nix;
             }
           ]
@@ -91,8 +110,20 @@
   in {
     formatter = eachSystem (pkgs: pkgs.alejandra);
 
+    # `nix flake check` runs it; `nix develop` installs it as the git pre-commit hook.
+    checks = genSystems (system: {
+      pre-commit = git-hooks.lib.${system}.run {
+        src = ./.;
+        hooks.alejandra = {
+          enable = true;
+          excludes = ["hardware-configuration\\.nix$"]; # generated, kept as-is
+        };
+      };
+    });
+
     devShells = eachSystem (pkgs: {
       default = pkgs.mkShell {
+        inherit (self.checks.${pkgs.stdenv.hostPlatform.system}.pre-commit) shellHook;
         packages = with pkgs; [
           # Ansible
           ansible

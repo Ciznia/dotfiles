@@ -3,8 +3,17 @@
   # a `ciznia.<feature>.enable` flag and gates its config behind it, so importing
   # them all is inert until a recipe (home/*.nix) flips the flags.
   imports = [
-    ./git.nix
     ./agent.nix
-    ./desktop.nix
+    ./apps.nix
+    ./cli.nix
+    ./desktop
+    ./dev.nix
+    ./gaming.nix
+    ./git.nix
+    ./k8s.nix
+    ./nvim.nix
+    ./shell.nix
+    ./terminal.nix
+    ./theme.nix
   ];
 }

@@ -9,3 +9,6 @@
 *.qcow2
 *.vhd
 *.vhdx
+
+# Python bytecode (e.g. from `qtile check`)
+__pycache__/

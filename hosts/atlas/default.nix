@@ -1,10 +1,41 @@
-{username, ...}: {
+{
+  pkgs,
+  username,
+  ...
+}: {
   # NixOS-WSL system. The nixos-wsl module and home-manager are wired by mkHost.
   wsl.enable = true;
   wsl.defaultUser = username;
 
   networking.hostName = "atlas";
-  nix.settings.experimental-features = ["nix-command" "flakes"];
+
+  ciznia = {
+    base.enable = true;
+    fonts.enable = true; # for WSLg apps
+    virtualisation.docker.enable = true;
+  };
+
+  wsl = {
+    useWindowsDriver = true;
+    startMenuLaunchers = true;
+    # VS Code's "Remote - Tunnels" extension doesn't read
+    # ~/.vscode-server/server-env-setup, so it needs these under /bin.
+    extraBin = map (src: {inherit src;}) (with pkgs; [
+      "${coreutils}/bin/uname"
+      "${coreutils}/bin/rm"
+      "${coreutils}/bin/mkdir"
+      "${coreutils}/bin/mv"
+      "${coreutils}/bin/dirname"
+      "${coreutils}/bin/readlink"
+      "${coreutils}/bin/wc"
+      "${coreutils}/bin/date"
+      "${coreutils}/bin/sleep"
+      "${coreutils}/bin/cat"
+      "${gnused}/bin/sed"
+      "${gnutar}/bin/tar"
+      "${gzip}/bin/gzip"
+    ]);
+  };
 
   # WSL never starts a systemd *user* instance for `wsl` shell sessions (no
   # login/PAM session -> no user bus), so home-manager user services

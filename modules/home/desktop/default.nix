@@ -6,9 +6,9 @@
 }: let
   cfg = config.ciznia.desktop;
 
-  lfsAsset = import ../lib/lfs-asset.nix pkgs;
-  wallpaper = lfsAsset ../../assets/wallpaper.jpeg;
-  lockVideo = lfsAsset ../../assets/lockscreen.mp4;
+  lfsAsset = import ../../lib/lfs-asset.nix pkgs;
+  wallpaper = lfsAsset ../../../assets/wallpaper.jpeg;
+  lockVideo = lfsAsset ../../../assets/lockscreen.mp4;
   wpctl = "${pkgs.wireplumber}/bin/wpctl";
 
   # xsecurelock runs this once per monitor, into $XSCREENSAVER_WINDOW. OpenGL +
@@ -23,17 +23,73 @@
       --vo=gpu --gpu-api=opengl --hwdec=auto-safe \
       --wid="$XSCREENSAVER_WINDOW" ${lockVideo}
   '';
+
+  # Super+P / Super+Shift+P (qtile controls.py): number -> autorandr profile.
+  displayProfile = pkgs.writeShellApplication {
+    name = "display-profile";
+    # arandr from stable: it fails to build on the pinned unstable (setuptools).
+    runtimeInputs = with pkgs; [autorandr stable.arandr libnotify];
+    text = ''
+      PROFILES=(${lib.escapeShellArgs cfg.displayProfiles})
+      ${builtins.readFile ./scripts/display-profile.sh}
+    '';
+  };
 in {
   # User half of the graphical stack (qtile session config, wallpaper, screen
-  # lock). The greeter half is modules/nixos/desktop.nix.
-  options.ciznia.desktop.enable = lib.mkEnableOption "qtile desktop (session config, wallpaper, screen lock)";
+  # lock, notifications). The greeter half is modules/nixos/desktop.nix.
+  imports = [./notifications.nix];
+
+  options.ciznia.desktop = {
+    enable = lib.mkEnableOption "qtile desktop (session config, wallpaper, screen lock)";
+
+    displayProfiles = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [];
+      example = ["docked" "mobile"];
+      description = ''
+        autorandr profiles behind the digits of Super+P (load) and
+        Super+Shift+P (save): the first is 1, and so on. Digits past the list
+        use "profile<N>".
+      '';
+    };
+  };
 
   config = lib.mkIf cfg.enable {
+    ciznia.terminal.enable = lib.mkDefault true; # kitty
+
     home.packages = with pkgs; [
+      displayProfile
       feh # wallpaper
-      rofi # app launcher
-      alacritty # terminal
+      rofi # app launcher, window switcher (Alt+Tab)
+      wmctrl
+      picom # compositor, started by autostart.sh
+      brightnessctl
+      pulsemixer # Super+V
+      xclip
+      xinput # touchpad toggle (Super+T)
+      dconf
     ];
+
+    services.flameshot = {
+      enable = true;
+      settings.General.uiColor = "#1435c7";
+    };
+
+    home.pointerCursor = {
+      enable = true;
+      gtk.enable = true;
+      x11.enable = true;
+      name = "Catppuccin-Macchiato-Dark-Cursors";
+      package = pkgs.catppuccin-cursors.macchiatoDark;
+      size = 24;
+    };
+
+    dconf.settings."org/gnome/desktop/interface".color-scheme = "prefer-dark";
+    qt = {
+      enable = true;
+      platformTheme.name = "kvantum";
+      style.name = "kvantum";
+    };
 
     # Lock after 15 min idle, on suspend and on `loginctl lock-session` (Super+L):
     # xss-lock follows the X screensaver timer and logind (xautolock would only
@@ -71,9 +127,14 @@ in {
     systemd.user.services.xss-lock.Service.ExecStartPost = "${pkgs.xset}/bin/xset dpms 1260 1260 1260";
 
     xdg.configFile = {
-      # Editable qtile config. Its startup hook runs autostart.sh (below), which
-      # carries the nix store paths so config.py can stay path-agnostic.
-      "qtile/config.py".source = ./qtile/config.py;
+      # qtile config. Its startup hook runs autostart.sh (below), which carries
+      # the nix store paths so the python files can stay path-agnostic.
+      "qtile/config.py".source = ../qtile/config.py;
+      "qtile/bar.py".source = ../qtile/bar.py;
+      "qtile/controls.py".source = ../qtile/controls.py;
+      "qtile/colors.py".source = ../qtile/colors.py;
+
+      "picom/picom.conf".source = ./picom.conf;
 
       "qtile/autostart.sh" = {
         executable = true;
@@ -86,6 +147,8 @@ in {
           ${pkgs.autorandr}/bin/autorandr --change --default mobile || true
           # Wallpaper.
           ${pkgs.feh}/bin/feh --no-fehbg --bg-fill ${wallpaper} &
+          # Compositor (config: ~/.config/picom/picom.conf).
+          ${pkgs.picom}/bin/picom -f --backend xrender &
         '';
       };
     };

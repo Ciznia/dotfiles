@@ -48,6 +48,21 @@ can turn a shared feature off with a plain `= false`. Without `mkDefault`, a
 host's `= false` would be a conflict, not an override. Host-only features (the
 desktop) default to off and are enabled by their host.
 
+What each host turns on:
+
+| Flag                                                                     | glados | atlas | pbody |
+|--------------------------------------------------------------------------|:------:|:-----:|:-----:|
+| home: `git`, `agent`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
+| home: `gaming`                                                           |   ✓    |       |   ✓   |
+| home: `desktop` (qtile, kitty, dunst, lock)                              |   ✓    |       |       |
+| nixos: `base`, `fonts`, `virtualisation.docker`                          |   ✓    |   ✓   |       |
+| nixos: `console`, `desktop`, `gaming`, `laptop`, `usb`, `secureBoot`, `virtualisation.{libvirt,waydroid}` | ✓ | | |
+
+`ciznia.shell.prompt` picks the prompt: `"atomic"` (oh-my-posh, default) or
+`"sigma"` (oh-my-zsh theme). Theming is catppuccin macchiato
+([catppuccin/nix](https://github.com/catppuccin/nix)), except where a program
+keeps its own colors (kitty, dunst, the TTY palette, the SDDM greeter).
+
 ## Adding a new system
 
 1. **Write the recipe** — `home/<name>.nix`: `imports = [ ./base.nix ]`, flip any
@@ -85,8 +100,8 @@ package is broken.
 ### Desktop
 
 X11 + SDDM + qtile + PipeWire, gated by `ciznia.desktop.enable`
-(`modules/nixos/desktop.nix` for the system half, `modules/home/desktop.nix`
-for the user half). X11 rather than Wayland because of the NVIDIA hybrid GPU
+(`modules/nixos/desktop.nix` for the system half, `modules/home/desktop/`
+for the user half; the qtile config is `modules/home/qtile/`). X11 rather than Wayland because of the NVIDIA hybrid GPU
 and qtile's more mature X11 backend; the Wayland qtile session is removed so
 SDDM can't pick it.
 
@@ -94,6 +109,11 @@ SDDM can't pick it.
   `nvidia-offload <cmd>` runs a program on the dGPU. Bus IDs `PCI:0:2:0` (Intel)
   and `PCI:1:0:0` (NVIDIA); check with `lspci -nnk | grep -EA3 'VGA|3D'` if a
   driver update misbehaves.
+- **Power:** TLP, from the nixos-hardware `common-pc-laptop` preset (with
+  `common-pc-ssd` for weekly fstrim and `common-cpu-intel`).
+- **Keys** that aren't obvious: Super+N opens the unread notifications,
+  Super+P / Super+Shift+P handle screens (below), Super+L locks, Super+T
+  toggles the touchpad, Super+Space drops down a terminal.
 - **Assets** (`assets/`) are **Git-LFS** tracked. Nix builds the checkout as-is,
   so a clone without git-lfs feeds pointer files to the desktop: the wallpaper
   never paints and the session *looks* frozen. The build fails on a pointer
@@ -106,10 +126,31 @@ at 0x0, HP X27c `HDMI-1-0` at 1920x0, primary, 164.92 Hz) and **mobile**
 (laptop only). They apply on hotplug, after suspend, at X start and at session
 start. The HDMI port is on the NVIDIA GPU, reached through reverse PRIME.
 
-To change a layout: arrange it with `xrandr`, then
-`autorandr --save docked --force`. Profiles in `~/.config/autorandr` override
-the same-named ones from the config. `autorandr --fingerprint` prints the EDIDs
+Shortcuts, numbered by `ciznia.desktop.displayProfiles` (1 = docked,
+2 = mobile; higher digits save/load `profile<N>`):
+
+- **Super+P**, then a digit loads that profile, or **Enter** opens arandr. arandr
+  runs through `nvidia-offload`: started on the iGPU it doesn't see the HDMI
+  port.
+- **Super+Shift+P**, then a digit saves the current layout under it
+  (`autorandr --save <name> --force`).
+
+Both show the profile map in a notification while waiting for the digit; Esc
+cancels. Saved profiles land in `~/.config/autorandr` and override the
+same-named ones from the config. `autorandr --fingerprint` prints the EDIDs
 for a new screen.
+
+### Notifications
+
+dunst popups still time out, but every notification is also appended to
+`~/.local/state/notifications/unread.jsonl`, so the list survives logout and
+reboot. The bar shows the unread count; **Super+N** (or a click on the count)
+lists them in rofi, to open one or mark it read.
+
+"Open" shows the notification again while the dunst instance that received it
+still holds it, so a click runs the sending app's own action. After a restart
+of dunst (or a reboot) it opens the notification's first link, or launches the
+app that sent it; the exact item can't be reopened then.
 
 ### Login and lock screen
 
