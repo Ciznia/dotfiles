@@ -46,7 +46,7 @@
   # (gpg-agent, the agent-preload timer) would never run. Lingering starts
   # user@UID at boot instead. NOTE: this makes the *first* `nixos-rebuild switch`
   # exit nonzero (user@UID can't start mid-activation) — the system still
-  # switches; `wsl --terminate atlas` then reopen brings it up cleanly.
+  # switches; `wsl --terminate NixOS` then reopen brings it up cleanly.
   users.users.${username} = {
     isNormalUser = true;
     extraGroups = ["wheel"];

@@ -219,7 +219,7 @@ details in [ANSIBLE.md](ANSIBLE.md#loading-the-key-at-startup). It needs
 **WSL needs lingering.** `wsl` shells never start a systemd *user* instance, so
 without `users.users.<name>.linger = true` (set on atlas) neither gpg-agent nor
 this timer runs. Linger makes the first `nixos-rebuild switch` exit nonzero;
-the system still switches, and `wsl --terminate atlas` + reopen brings it up.
+the system still switches, and `wsl --terminate NixOS` + reopen brings it up.
 
 ## Testing
 
