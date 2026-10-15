@@ -5,11 +5,10 @@
 }: {
   # NixOS-WSL system. The nixos-wsl module and home-manager are wired by mkHost.
   wsl.enable = true;
-  # The install's `nixos` user stays the WSL default (NixOS-WSL gives it uid
-  # 1000, which it already owns) and the backup account; it must stay declared
-  # or NixOS deletes it. Flip this to `username` once that account is ready;
-  # until then `username` is a plain user declared below.
-  wsl.defaultUser = "nixos";
+  # `username` is the WSL default user, so Explorer (\\wsl.localhost\NixOS)
+  # browses as it. NixOS-WSL gives the default user uid 1000; the install's
+  # `nixos` user is no longer declared, so NixOS removes it (its home stays).
+  wsl.defaultUser = username;
 
   networking.hostName = "atlas";
 
@@ -47,11 +46,8 @@
   # NOTE: this makes the *first* `nixos-rebuild switch`
   # exit nonzero (user@UID can't start mid-activation) — the system still
   # switches; `wsl --terminate NixOS` then reopen brings it up cleanly.
-  users.users.${username} = {
-    isNormalUser = true;
-    extraGroups = ["wheel"];
-    linger = true;
-  };
+  # isNormalUser, uid 1000 and wheel come from wsl.defaultUser.
+  users.users.${username}.linger = true;
 
   system.stateVersion = "26.05";
 }
