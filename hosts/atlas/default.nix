@@ -93,5 +93,15 @@
     '';
   };
 
+  # Right after that unmount, user@<uid> can fail to spawn once ("Device or
+  # resource busy") and systemd doesn't retry it on its own.
+  systemd.services."user@${toString config.users.users.${username}.uid}" = {
+    overrideStrategy = "asDropin";
+    serviceConfig = {
+      Restart = "on-failure";
+      RestartSec = 1;
+    };
+  };
+
   system.stateVersion = "26.05";
 }
