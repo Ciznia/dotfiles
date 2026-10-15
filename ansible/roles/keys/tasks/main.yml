@@ -9,7 +9,6 @@
   ansible.builtin.import_tasks: gpg.yml
   tags: [keys, gpg]
 
-# `never` ⇒ skipped by normal/full runs; fires only on `--tags agent`.
-- name: Load the SSH key into the agent (startup)
-  ansible.builtin.import_tasks: agent.yml
-  tags: [never, agent]
+- name: WakaTime API key
+  ansible.builtin.import_tasks: wakatime.yml
+  tags: [keys, wakatime]

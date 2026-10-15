@@ -12,3 +12,4 @@
 
 # Python bytecode (e.g. from `qtile check`)
 __pycache__/
+.pre-commit-config.yaml

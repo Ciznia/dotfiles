@@ -43,8 +43,8 @@
 
   # WSL never starts a systemd *user* instance for `wsl` shell sessions (no
   # login/PAM session -> no user bus), so home-manager user services
-  # (gpg-agent, the agent-preload timer) would never run. Lingering starts
-  # user@UID at boot instead. NOTE: this makes the *first* `nixos-rebuild switch`
+  # (gpg-agent) would never run. Lingering starts user@UID at boot instead.
+  # NOTE: this makes the *first* `nixos-rebuild switch`
   # exit nonzero (user@UID can't start mid-activation) — the system still
   # switches; `wsl --terminate NixOS` then reopen brings it up cleanly.
   users.users.${username} = {

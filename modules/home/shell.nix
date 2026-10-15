@@ -26,6 +26,10 @@ in {
   config = lib.mkIf cfg.enable {
     home.sessionVariables.EDITOR = "nvim";
 
+    # The zsh and bash wakatime plugins call ~/.wakatime/wakatime-cli (the
+    # official installer's path), not the one on PATH.
+    home.file.".wakatime/wakatime-cli".source = "${pkgs.wakatime-cli}/bin/wakatime-cli";
+
     home.shellAliases = {
       ll = "ls -l";
       dodo = "shutdown now";
@@ -71,7 +75,7 @@ in {
         enable = true;
         custom = "${./shell/omz}";
         theme = lib.mkIf (cfg.prompt == "sigma") "sigma";
-        # No ssh-agent plugin: gpg-agent is the ssh agent (git.nix).
+        # No ssh-agent plugin: the ssh key has no passphrase, ssh reads it directly.
         plugins = ["git" "command-not-found"];
       };
     };

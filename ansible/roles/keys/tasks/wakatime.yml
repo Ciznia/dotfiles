@@ -1,0 +1,12 @@
+---
+# The zsh, bash and nvim wakatime plugins all read the key from ~/.wakatime.cfg.
+# Only the key is managed: the plugins write their own [settings] next to it.
+- name: Write the WakaTime API key
+  community.general.ini_file:
+    path: "{{ ansible_facts.env.HOME }}/.wakatime.cfg"
+    section: settings
+    option: api_key
+    value: "{{ vault_wakatime_api_key }}"
+    mode: "0600"
+  when: vault_wakatime_api_key is defined
+  no_log: true

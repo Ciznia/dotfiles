@@ -12,26 +12,20 @@
 # The resulting all.vault.yml IS meant to be committed (encrypted at rest).
 # ═══════════════════════════════════════════════════════════════
 
-# Full OpenSSH private key, including BEGIN/END lines.
+# Full OpenSSH private key, including BEGIN/END lines, without a passphrase
+# (the vault is what protects it).
 #   cat ~/.ssh/id_ed25519
 vault_ssh_private_key: |
   -----BEGIN OPENSSH PRIVATE KEY-----
   ...paste...
   -----END OPENSSH PRIVATE KEY-----
 
-# Passphrase protecting the SSH key above. The `agent` tasks also protect
-# gpg-agent's copy of the key with it and preset it there at session startup.
-# Quote it to be safe.
-vault_ssh_passphrase: "…the ssh key passphrase…"
-
-# Armored GPG secret key.
+# Armored GPG secret key, without a passphrase.
 #   gpg --armor --export-secret-keys hosquetgabriel@gmail.com
 vault_gpg_private_key: |
   -----BEGIN PGP PRIVATE KEY BLOCK-----
   ...paste...
   -----END PGP PRIVATE KEY BLOCK-----
 
-# Passphrase protecting the GPG key above. Preloaded into gpg-agent by the
-# `agent` tasks, so it's never typed. Can be a long random value (openssl
-# rand) since it lives here, not in your head. Quote it.
-vault_gpg_passphrase: "…the gpg key passphrase…"
+# WakaTime API key (wakatime.com/settings/api-key), written to ~/.wakatime.cfg.
+vault_wakatime_api_key: "waka_…"

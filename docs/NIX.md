@@ -52,7 +52,7 @@ What each host turns on:
 
 | Flag                                                                     | glados | atlas | pbody |
 |--------------------------------------------------------------------------|:------:|:-----:|:-----:|
-| home: `git`, `agent`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
+| home: `git`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
 | home: `gaming`                                                           |   ✓    |       |   ✓   |
 | home: `desktop` (qtile, kitty, dunst, lock)                              |   ✓    |       |       |
 | nixos: `base`, `fonts`, `virtualisation.docker`                          |   ✓    |   ✓   |       |
@@ -208,17 +208,11 @@ bootctl status                    # expect: Secure Boot: enabled (user)
 BIOS, press **right Ctrl + right Shift + left Alt + F2**; the Copilot key works
 as right Ctrl. Then, under Secure Boot, use Reset To Setup Mode.
 
-## Key auto-loading (`ciznia.agent`)
-
-`modules/home/agent.nix` runs the Ansible `--tags agent` flow as a systemd user
-service, 30s after login and every 20h (under the 24h gpg-agent cache TTL). It
-unlocks the gpg and ssh keys in gpg-agent from the vault, so nothing is typed;
-details in [ANSIBLE.md](ANSIBLE.md#loading-the-key-at-startup). It needs
-`.vault_pass` at `ciznia.agent.repoPath` (default `~/dotfiles`).
+## WSL
 
 **WSL needs lingering.** `wsl` shells never start a systemd *user* instance, so
-without `users.users.<name>.linger = true` (set on atlas) neither gpg-agent nor
-this timer runs. Linger makes the first `nixos-rebuild switch` exit nonzero;
+without `users.users.<name>.linger = true` (set on atlas) gpg-agent and other
+user services don't run. Linger makes the first `nixos-rebuild switch` exit nonzero;
 the system still switches, and `wsl --terminate NixOS` + reopen brings it up.
 
 ## Testing
@@ -242,8 +236,6 @@ ssh ciznia@localhost -p 2222      # logs, when the session misbehaves
 ```
 
 Runs from WSL (WSLg shows the window) or any Linux; slow without nested KVM.
-For the agent timer inside the VM, clone the repo to `~/dotfiles` and add
-`.vault_pass` first.
 
 ## Secrets boundary
 

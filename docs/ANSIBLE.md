@@ -35,18 +35,13 @@ ansible-playbook ansible/playbooks/keys.yml --diff     # show what would change
 | `ssh`      | SSH key only                                       |
 | `gpg`      | GPG import **+** pass re-encrypt (a full rotation) |
 | `pass`     | pass re-encrypt only                               |
-| `keys`     | SSH + GPG, no pass                                 |
-| `agent`    | preset gpg/ssh passphrases into gpg-agent (startup) |
+| `keys`     | SSH + GPG + WakaTime key, no pass                  |
+| `wakatime` | WakaTime API key only                              |
 
 ```bash
 ansible-playbook ansible/playbooks/keys.yml --tags ssh
 ansible-playbook ansible/playbooks/keys.yml --tags gpg   # rotate GPG end to end
-ansible-playbook ansible/playbooks/keys.yml --tags agent # load key into agent at login
 ```
-
-The `agent` tasks are tagged `never`, so a normal run (no tags, or `--tags
-keys/ssh/gpg/pass`) never touches the agent — only an explicit `--tags agent`
-runs them.
 
 **Vault password.** `ansible.cfg` reads it from `.vault_pass` (git-ignored, one
 line, `chmod 600`). If that file doesn't exist, either create it or comment out
@@ -85,7 +80,7 @@ Restores the **shared** identity — the same private keys on every machine
 (NixOS, NixOS-WSL, …), sourced from the vault — and keeps the `pass` store in
 sync with it. It runs two roles:
 
-- **`keys`** (tasks split into `ssh.yml` / `gpg.yml`):
+- **`keys`** (tasks split into `ssh.yml` / `gpg.yml` / `wakatime.yml`):
   - *SSH* — ensures `~/.ssh` (`0700`), writes the private key to
     `~/.ssh/id_ed25519` (`0600`) from `vault_ssh_private_key`, and the public key
     to `id_ed25519.pub` (`0644`) from `ssh_public_key`.
@@ -93,12 +88,8 @@ sync with it. It runs two roles:
     importing) and compares it to the keyring; imports only when they differ,
     then marks the key ultimately trusted. This covers both first install and
     rotation to a new key for the same identity.
-  - *agent* (`--tags agent` only) — unlocks the GPG and SSH keys in
-    gpg-agent by presetting `vault_gpg_passphrase` / `vault_ssh_passphrase`
-    on their keygrips, so nothing is typed. The SSH key must have been
-    imported into gpg-agent once. Tagged `never`, so only an explicit
-    `--tags agent` runs it. See
-    [Loading the key at startup](#loading-the-key-at-startup).
+  - *WakaTime* — sets `api_key` in `~/.wakatime.cfg` from
+    `vault_wakatime_api_key`, leaving the plugins' other settings alone.
 - **`pass`** — keeps `~/.password-store` encrypted to the *current* GPG
   fingerprint. It compares the store's `.gpg-id` to the live key and runs
   `pass init <FPR>` only when they differ, so after a GPG rotation the whole
@@ -115,15 +106,13 @@ Variables it uses:
 |--------------------------------------------------------|---------------------------|---------|
 | `ssh_key_type`, `ssh_public_key`, `gpg_email`          | `all.yml`                 | no      |
 | `vault_ssh_private_key`, `vault_gpg_private_key`       | `all.vault.yml`           | yes     |
-| `vault_ssh_passphrase`, `vault_gpg_passphrase`         | `all.vault.yml`           | yes     |
+| `vault_wakatime_api_key`                               | `all.vault.yml`           | yes     |
 | `ansible_python_interpreter`                           | `host_vars/localhost.yml` | no      |
 | `password_store_dir` (default `~/.password-store`)     | `roles/pass/defaults`     | no      |
 
 > **`pass` prerequisites.** Initialize the store with the **fingerprint**
 > (`pass init <FPR>`), not the email — an email `.gpg-id` always resolves to the
-> newest key and would hide a rotation. And because `pass init` re-encrypts by
-> *decrypting* each entry, the GPG agent must be able to unlock the key
-> (passphrase prompt / cached agent) when the role runs.
+> newest key and would hide a rotation.
 
 #### Setting the secrets (first machine)
 
@@ -132,9 +121,12 @@ Do this once; afterwards every machine just runs the playbook.
 1. Generate (or reuse) the keys — inside `nix develop`:
 
    ```bash
-   ssh-keygen -t ed25519 -C "hosquetgabriel@gmail.com" -f ./id_ed25519
-   gpg --full-generate-key            # identity: hosquetgabriel@gmail.com
+   ssh-keygen -t ed25519 -C "hosquetgabriel@gmail.com" -f ./id_ed25519 -N ""
+   gpg --full-generate-key            # identity: hosquetgabriel@gmail.com, empty passphrase
    ```
+
+   Neither key gets a passphrase: the vault protects them at rest, and the
+   vault password sits on the same disk as the keys anyway.
 
 2. Put the **public** SSH key into `all.yml` (`ssh_public_key`) — public keys
    aren't secret.
@@ -193,37 +185,6 @@ they skip `pass init`. Finally, publish the new public key and revoke the old
 one as usual. The old secret key is left in the keyring; delete it by hand if
 you want (`gpg --delete-secret-and-public-key <old-fingerprint>`).
 
-#### Loading the key at startup
-
-gpg-agent is the single source of truth: it holds the GPG keys and, through
-`enableSshSupport`, the SSH key. The `agent` tasks unlock both by presetting
-`vault_gpg_passphrase` and `vault_ssh_passphrase` on their keygrips with
-`gpg-preset-passphrase`, so you never type them. Run just that slice:
-
-```bash
-ansible-playbook ansible/playbooks/keys.yml --tags agent
-```
-
-**SSH import, headless.** gpg-agent only holds the SSH key after an `ssh-add`,
-and on that first import it asks its pinentry for a passphrase to protect its
-copy — which needs a terminal. So when the key's keygrip isn't in gpg-agent
-yet, the tasks import it through a throwaway gpg-agent (homedir under
-`/run/user/<uid>`) whose scripted pinentry answers with `vault_ssh_passphrase`,
-copy the protected key file it writes into `~/.gnupg/private-keys-v1.d/`, add
-the keygrip to `~/.gnupg/sshcontrol`, then kill the throwaway agent and delete
-its homedir. The passphrase only ever lives in that agent's environment. Later
-runs find the keygrip and skip straight to the preset.
-
-On NixOS, `ciznia.agent` (`modules/home/agent.nix`) runs this at login and
-every 20h as a systemd user service — see [NIX.md](NIX.md#key-auto-loading-cizniaagent).
-Whatever runs it must provide:
-
-- **gpg-agent** with `allow-preset-passphrase` (set in `modules/home/git.nix`).
-- **`PATH`** with coreutils and a shell besides ansible/gnupg/openssh —
-  Ansible's local connection shells out to `mkdir` and friends.
-- **The vault password** — the run has to decrypt the passphrases, so
-  `.vault_pass` (or `--ask-vault-pass`) must be reachable by that service.
-
 ## Troubleshooting
 
 - **`ansible.cfg` ignored / "Ansible is being run in a world writable
@@ -235,8 +196,3 @@ Whatever runs it must provide:
 - **`vault password file … Exec format error`** — Ansible treats an
   *executable* `vault_password_file` as a script to run. On `/mnt/c` the file is
   often `0777`. Drop the exec bit: `chmod 600 .vault_pass`.
-
-- **"Could not open a connection to your authentication agent"** —
-  `SSH_AUTH_SOCK` isn't set in that shell. home-manager only exports it from
-  shells it manages (`programs.bash.enable` in `modules/home/git.nix`); open a
-  new login shell after switching.
