@@ -248,7 +248,7 @@ clear, values encrypted) and are decrypted at login by sops-nix
 |--------------------|-----------------------------------------------------------|
 | `ssh_private_key`  | `~/.ssh/id_ed25519`, a link into `$XDG_RUNTIME_DIR` (tmpfs) |
 | `gpg_private_key`  | imported into the keyring by `gpg-import.service`         |
-| `wakatime_api_key` | `~/.wakatime.cfg`, rendered from a template               |
+| `wakatime_api_key` | `~/.wakatime.cfg`, rendered from a template (only with `ciznia.secrets.wakatime.enable`) |
 
 Each machine has **its own age key** in `~/.config/sops/age/keys.txt`, never
 committed, and `.sops.yaml` lists every machine's public key. A leaked key then
@@ -274,7 +274,7 @@ Enable `ciznia.secrets` in the host's `home/<host>.nix` and switch.
 
 **The first machine** has nothing to re-encrypt: add its key to `.sops.yaml`,
 then `sops secrets/secrets.yaml` opens an empty file in `$EDITOR`. Fill in the
-three names above (the private keys as YAML block scalars, `|`) and save.
+names above (the private keys as YAML block scalars, `|`) and save.
 
 **Editing** a value: `sops secrets/secrets.yaml` on any recipient machine.
 
