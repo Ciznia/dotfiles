@@ -276,6 +276,8 @@ Enable `ciznia.secrets` in the host's `home/<host>.nix` and switch.
 then `sops secrets/secrets.yaml` opens an empty file in `$EDITOR`. Fill in the
 names above (the private keys as YAML block scalars, `|`) and save.
 
+Recipients today: **atlas**.
+
 **Editing** a value: `sops secrets/secrets.yaml` on any recipient machine.
 
 Nix itself stays secret-free: it may reference non-secret identity (git email,

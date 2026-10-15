@@ -33,9 +33,13 @@ in {
         gpg_private_key = {};
       };
 
-      home.file.".ssh/id_ed25519.pub".text = ''
-        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM9z8Dn3x4q+5O65wSAX3IzRckHoR7eMgNSMpQzv7hxC hosquetgabriel@gmail.com
-      '';
+      home.file.".ssh/id_ed25519.pub" = {
+        # The Ansible preflight wrote this as a plain file; replace it.
+        force = true;
+        text = ''
+          ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM9z8Dn3x4q+5O65wSAX3IzRckHoR7eMgNSMpQzv7hxC hosquetgabriel@gmail.com
+        '';
+      };
 
       # gpg keeps its own keyring, so the key is imported rather than linked.
       # Skipped once the signing key is present; a rotated key (new fingerprint)

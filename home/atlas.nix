@@ -5,6 +5,9 @@
 }: {
   imports = [./base.nix];
 
+  # atlas is a recipient in .sops.yaml.
+  ciznia.secrets.enable = true;
+
   # atlas: NixOS-WSL, integrated home-manager. username/homeDirectory come from
   # the system user (ciznia, via wsl.defaultUser), so no standalone contract.
 
