@@ -219,7 +219,8 @@ the system still switches, and `wsl --terminate NixOS` + reopen brings it up.
 **WSLg hides the default user's runtime dir.** WSLg mounts its own tmpfs over
 `/run/user/<uid>` of the WSL default user, on top of systemd's: the user bus
 (`systemctl --user`) and sops-nix's secrets vanish under it. On atlas the
-`wslg-runtime-dir` unit drops that layer at boot and re-links WSLg's Wayland and
+`wslg-runtime-dir` unit drops that layer at boot, before `user@<uid>` starts
+(or the user bus lands in the layer it removes), and re-links WSLg's Wayland and
 PulseAudio sockets into systemd's dir. It only runs at boot (an open shell
 holds sockets in WSLg's layer), so apply a change to it with
 `switch-to-configuration boot` and `wsl --terminate NixOS`.
