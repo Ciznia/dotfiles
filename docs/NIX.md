@@ -1,8 +1,9 @@
 # Nix — system & user configuration
 
 Nix owns everything declarative: the OS on NixOS hosts, and the **user
-environment** (home-manager) on every host. Secrets (ssh/gpg/pass) belong to
-[ANSIBLE.md](ANSIBLE.md).
+environment** (home-manager) on every host. Secrets are sops-encrypted
+(see [Secrets](#secrets)); [ANSIBLE.md](ANSIBLE.md) is the older path, kept for
+machines that don't decrypt them yet.
 
 ## Hosts
 
@@ -237,8 +238,47 @@ ssh ciznia@localhost -p 2222      # logs, when the session misbehaves
 
 Runs from WSL (WSLg shows the window) or any Linux; slow without nested KVM.
 
-## Secrets boundary
+## Secrets
 
-Nix stays secret-free: it may reference non-secret identity (git email, the
-signing-key fingerprint), never key material. Keys are provisioned by the
-Ansible preflight.
+Keys and tokens live encrypted in `secrets/secrets.yaml` (sops, key names in
+clear, values encrypted) and are decrypted at login by sops-nix
+(`ciznia.secrets`, a home-manager user service, `sops-nix.service`):
+
+| Secret             | Lands at                                                  |
+|--------------------|-----------------------------------------------------------|
+| `ssh_private_key`  | `~/.ssh/id_ed25519`, a link into `$XDG_RUNTIME_DIR` (tmpfs) |
+| `gpg_private_key`  | imported into the keyring by `gpg-import.service`         |
+| `wakatime_api_key` | `~/.wakatime.cfg`, rendered from a template               |
+
+Each machine has **its own age key** in `~/.config/sops/age/keys.txt`, never
+committed, and `.sops.yaml` lists every machine's public key. A leaked key then
+points at one machine, and removing it from `.sops.yaml` cuts that machine off.
+Only turn `ciznia.secrets.enable` on for a host once it is a recipient.
+
+**Adding a machine.** On the new machine:
+
+```bash
+nix develop                                   # sops + age
+mkdir -p ~/.config/sops/age
+age-keygen -o ~/.config/sops/age/keys.txt     # prints the public key (age1...)
+```
+
+Add that public key to `.sops.yaml`, then on a machine that already decrypts
+re-encrypt the file for the new list, and push:
+
+```bash
+sops updatekeys secrets/secrets.yaml
+```
+
+Enable `ciznia.secrets` in the host's `home/<host>.nix` and switch.
+
+**The first machine** has nothing to re-encrypt: add its key to `.sops.yaml`,
+then `sops secrets/secrets.yaml` opens an empty file in `$EDITOR`. Fill in the
+three names above (the private keys as YAML block scalars, `|`) and save.
+
+**Editing** a value: `sops secrets/secrets.yaml` on any recipient machine.
+
+Nix itself stays secret-free: it may reference non-secret identity (git email,
+the signing-key fingerprint, the ssh public key), never key material. Ansible
+still provisions the keys on machines without `ciznia.secrets`, until each
+machine gets its own ssh and gpg keys.

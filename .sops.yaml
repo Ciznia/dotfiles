@@ -1,0 +1,10 @@
+# One age key per machine, so a leaked key points at one machine.
+# Public keys only: each private key stays in that machine's
+# ~/.config/sops/age/keys.txt. After changing the list, run
+# `sops updatekeys secrets/secrets.yaml` on a machine that already decrypts.
+keys: []
+
+creation_rules:
+  - path_regex: ^secrets/[^/]+\.yaml$
+    key_groups:
+      - age: []

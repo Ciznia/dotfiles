@@ -4,12 +4,19 @@
   pkgs,
   ...
 }: let
-  # The GPG identity restored by the Ansible preflight (`gpg --show-keys`).
-  signingKey = "A8A7205E2FD4672A77058657654E6EA7882F6671";
+  inherit (config.ciznia.git) signingKey;
 in {
   # git + gpg live behind one flag: signed commits need the key, the agent, and
   # a pinentry, so enabling git pulls all of it in.
-  options.ciznia.git.enable = lib.mkEnableOption "git (with gpg signing + agent)";
+  options.ciznia.git = {
+    enable = lib.mkEnableOption "git (with gpg signing + agent)";
+
+    signingKey = lib.mkOption {
+      type = lib.types.str;
+      default = "A8A7205E2FD4672A77058657654E6EA7882F6671";
+      description = "Fingerprint of the GPG key that signs commits (imported by ciznia.secrets).";
+    };
+  };
 
   config = lib.mkIf config.ciznia.git.enable {
     programs.git = {

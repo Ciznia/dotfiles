@@ -28,6 +28,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -42,6 +47,7 @@
     nixos-wsl,
     lanzaboote,
     catppuccin,
+    sops-nix,
     git-hooks,
     ...
   } @ inputs: let
@@ -68,6 +74,11 @@
         overlays = [stableOverlay];
       };
 
+    homeSharedModules = [
+      catppuccin.homeModules.catppuccin
+      sops-nix.homeModules.sops
+    ];
+
     # Standalone home-manager (non-NixOS hosts).
     mkHome = {
       system ? "x86_64-linux",
@@ -76,7 +87,7 @@
       home-manager.lib.homeManagerConfiguration {
         pkgs = mkPkgs system;
         extraSpecialArgs = {inherit inputs username;};
-        modules = [catppuccin.homeModules.catppuccin] ++ modules;
+        modules = homeSharedModules ++ modules;
       };
 
     # Integrated NixOS host (native or WSL). Embeds the same home/<name>.nix via
@@ -101,7 +112,7 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.extraSpecialArgs = {inherit inputs username;};
-              home-manager.sharedModules = [catppuccin.homeModules.catppuccin];
+              home-manager.sharedModules = homeSharedModules;
               home-manager.users.${username} = import ./home/${name}.nix;
             }
           ]
@@ -148,6 +159,8 @@
           gnupg # gpg: import/list secret keys (keys role)
           openssh # ssh-keygen: one-time key generation for the vault
           pass # password store: re-encrypt on GPG rotation (pass role)
+          sops # edit secrets/secrets.yaml
+          age # age-keygen: one key per machine (sops recipients)
         ];
       };
     });
