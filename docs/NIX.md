@@ -216,6 +216,14 @@ without `users.users.<name>.linger = true` (set on atlas) gpg-agent and other
 user services don't run. Linger makes the first `nixos-rebuild switch` exit nonzero;
 the system still switches, and `wsl --terminate NixOS` + reopen brings it up.
 
+**WSLg hides the default user's runtime dir.** WSLg mounts its own tmpfs over
+`/run/user/<uid>` of the WSL default user, on top of systemd's: the user bus
+(`systemctl --user`) and sops-nix's secrets vanish under it. On atlas the
+`wslg-runtime-dir` unit drops that layer at boot and re-links WSLg's Wayland and
+PulseAudio sockets into systemd's dir. It only runs at boot (an open shell
+holds sockets in WSLg's layer), so apply a change to it with
+`switch-to-configuration boot` and `wsl --terminate NixOS`.
+
 ## Testing
 
 **Fresh NixOS-WSL bootstrap** — `scripts/test-nixos-wsl.ps1` (Windows

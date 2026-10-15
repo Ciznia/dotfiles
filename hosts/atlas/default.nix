@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   username,
   ...
@@ -48,6 +49,44 @@
   # switches; `wsl --terminate NixOS` then reopen brings it up cleanly.
   # isNormalUser, uid 1000 and wheel come from wsl.defaultUser.
   users.users.${username}.linger = true;
+
+  # WSLg mounts its own tmpfs over the default user's /run/user/<uid>, on top
+  # of the one systemd made for user@<uid>: that hides the user bus
+  # (`systemctl --user` fails) and sops-nix's decrypted secrets. At boot, drop
+  # WSLg's layer and recreate its links (Wayland, PulseAudio) in systemd's dir.
+  systemd.services.wslg-runtime-dir = let
+    dir = "/run/user/${toString config.users.users.${username}.uid}";
+    wslg = "/mnt/wslg/runtime-dir";
+  in {
+    description = "Unhide ${dir} from WSLg's overmount";
+    wantedBy = ["multi-user.target"];
+    after = ["user@${toString config.users.users.${username}.uid}.service"];
+    # Only at boot: once shells hold sockets in WSLg's layer, unmounting it
+    # would cut them off (see docs/NIX.md, WSL).
+    restartIfChanged = false;
+    path = [pkgs.util-linux pkgs.coreutils];
+    # Not oneshot: WSL may only mount its layer once boot is done, so waiting
+    # for it must not hold boot (and the first shell) up.
+    serviceConfig.Type = "exec";
+    script = ''
+      # WSL mounts its layer shortly after boot: wait for the second mount.
+      for _ in $(seq 120); do
+        if [ "$(findmnt -n -o TARGET ${dir} | wc -l)" -ge 2 ]; then
+          umount -l ${dir}
+          break
+        fi
+        sleep 1
+      done
+      if [ -d ${wslg} ]; then
+        ln -sfn ${wslg}/wayland-0 ${dir}/wayland-0
+        ln -sfn ${wslg}/wayland-0.lock ${dir}/wayland-0.lock
+        mkdir -p ${dir}/pulse
+        ln -sfn ${wslg}/pulse/native ${dir}/pulse/native
+        ln -sfn ${wslg}/pulse/pid ${dir}/pulse/pid
+        chown -h ${username}:users ${dir}/pulse
+      fi
+    '';
+  };
 
   system.stateVersion = "26.05";
 }
