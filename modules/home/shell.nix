@@ -28,7 +28,12 @@ in {
 
     # The zsh and bash wakatime plugins call ~/.wakatime/wakatime-cli (the
     # official installer's path), not the one on PATH.
-    home.file.".wakatime/wakatime-cli".source = "${pkgs.wakatime-cli}/bin/wakatime-cli";
+    # vim-wakatime downloads its own cli into ~/.wakatime and points this link at
+    # it, which then fails activation as a file that would be clobbered.
+    home.file.".wakatime/wakatime-cli" = {
+      source = "${pkgs.wakatime-cli}/bin/wakatime-cli";
+      force = true;
+    };
 
     home.shellAliases = {
       ll = "ls -l";
