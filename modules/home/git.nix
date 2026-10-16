@@ -11,10 +11,12 @@ in {
   options.ciznia.git = {
     enable = lib.mkEnableOption "git (with gpg signing + agent)";
 
+    # Defaults to the shared key Ansible still restores; a machine with its own
+    # keys (ciznia.secrets) sets its own fingerprint.
     signingKey = lib.mkOption {
       type = lib.types.str;
       default = "A8A7205E2FD4672A77058657654E6EA7882F6671";
-      description = "Fingerprint of the GPG key that signs commits (imported by ciznia.secrets).";
+      description = "Fingerprint of the GPG key that signs commits.";
     };
   };
 

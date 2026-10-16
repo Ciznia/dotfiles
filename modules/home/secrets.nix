@@ -9,14 +9,26 @@
   gpg = "${config.programs.gpg.package}/bin/gpg";
   inherit (config.ciznia.git) signingKey;
 in {
-  # Keys and tokens decrypted by sops-nix from secrets/secrets.yaml. Only enable
-  # on a machine whose age key is a recipient in .sops.yaml (see docs/NIX.md, Secrets),
-  # or sops-nix.service fails to decrypt.
+  # Each machine's own ssh and gpg keys, decrypted by sops-nix from
+  # secrets/<host>.yaml, which only that machine's age key opens. Only enable on a
+  # machine that has its file and is its recipient in .sops.yaml (see docs/NIX.md,
+  # Secrets), or sops-nix.service fails to decrypt.
   options.ciznia.secrets = {
-    enable = lib.mkEnableOption "sops-nix secrets (ssh, gpg)";
+    enable = lib.mkEnableOption "sops-nix secrets (this machine's ssh and gpg keys)";
+
+    host = lib.mkOption {
+      type = lib.types.str;
+      description = "Machine name: its keys are read from secrets/<host>.yaml.";
+    };
+
+    sshPublicKey = lib.mkOption {
+      type = lib.types.str;
+      description = "Public half of this machine's ssh key, written to ~/.ssh/id_ed25519.pub.";
+    };
+
     # Separate: sops-nix fails the whole service when a declared secret is
     # missing from the file, so only turn it on once wakatime_api_key is in it.
-    wakatime.enable = lib.mkEnableOption "the WakaTime API key from sops";
+    wakatime.enable = lib.mkEnableOption "the WakaTime API key from sops (secrets/secrets.yaml, shared)";
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -24,7 +36,7 @@ in {
       # Not age.generateKey: it would hide a missing key behind a fresh one that
       # no .sops.yaml recipient matches.
       sops.age.keyFile = "${config.xdg.configHome}/sops/age/keys.txt";
-      sops.defaultSopsFile = ../../secrets/secrets.yaml;
+      sops.defaultSopsFile = ../../secrets + "/${cfg.host}.yaml";
 
       # Decrypted into $XDG_RUNTIME_DIR (tmpfs), each `path` is a symlink to it.
       # sops-nix replaces whatever file already sits at a path.
@@ -36,9 +48,7 @@ in {
       home.file.".ssh/id_ed25519.pub" = {
         # The Ansible preflight wrote this as a plain file; replace it.
         force = true;
-        text = ''
-          ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM9z8Dn3x4q+5O65wSAX3IzRckHoR7eMgNSMpQzv7hxC hosquetgabriel@gmail.com
-        '';
+        text = cfg.sshPublicKey + "\n";
       };
 
       # gpg keeps its own keyring, so the key is imported rather than linked.
@@ -64,7 +74,8 @@ in {
     }
 
     (lib.mkIf cfg.wakatime.enable {
-      sops.secrets.wakatime_api_key = {};
+      # The same token on every machine, so it lives in the shared file.
+      sops.secrets.wakatime_api_key.sopsFile = ../../secrets/secrets.yaml;
 
       # The zsh, bash and nvim wakatime plugins all read the key from here.
       sops.templates."wakatime.cfg" = {

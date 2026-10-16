@@ -249,47 +249,69 @@ Runs from WSL (WSLg shows the window) or any Linux; slow without nested KVM.
 
 ## Secrets
 
-Keys and tokens live encrypted in `secrets/secrets.yaml` (sops, key names in
-clear, values encrypted) and are decrypted at login by sops-nix
-(`ciznia.secrets`, a home-manager user service, `sops-nix.service`):
+Each machine has **its own ssh and gpg keys**, encrypted in `secrets/<host>.yaml`
+to that machine alone (sops, key names in clear, values encrypted), and
+decrypted at login by sops-nix (`ciznia.secrets`, a home-manager user service,
+`sops-nix.service`):
 
 | Secret             | Lands at                                                  |
 |--------------------|-----------------------------------------------------------|
 | `ssh_private_key`  | `~/.ssh/id_ed25519`, a link into `$XDG_RUNTIME_DIR` (tmpfs) |
 | `gpg_private_key`  | imported into the keyring by `gpg-import.service`         |
+
+Secrets every machine shares go in `secrets/secrets.yaml`, encrypted to all of
+them:
+
+| Secret             | Lands at                                                  |
+|--------------------|-----------------------------------------------------------|
 | `wakatime_api_key` | `~/.wakatime.cfg`, rendered from a template (only with `ciznia.secrets.wakatime.enable`) |
 
-Each machine has **its own age key** in `~/.config/sops/age/keys.txt`, never
-committed, and `.sops.yaml` lists every machine's public key. A leaked key then
-points at one machine, and removing it from `.sops.yaml` cuts that machine off.
-Only turn `ciznia.secrets.enable` on for a host once it is a recipient.
+Each machine also has **its own age key** in `~/.config/sops/age/keys.txt`, never
+committed, and `.sops.yaml` lists every machine's public key. A leaked machine
+then exposes only its own keys: revoke them on GitHub, drop its age key from
+`.sops.yaml`, and the other machines are untouched.
 
-**Adding a machine.** On the new machine:
+**Adding a machine.** On the new machine, make its age key, ssh key and gpg key,
+in a tmpfs so no plaintext key lands on disk:
 
 ```bash
-nix develop                                   # sops + age
+nix develop                                   # sops, age, gpg, ssh-keygen
 mkdir -p ~/.config/sops/age
 age-keygen -o ~/.config/sops/age/keys.txt     # prints the public key (age1...)
+
+W=$(mktemp -d "$XDG_RUNTIME_DIR/keys.XXXX")
+ssh-keygen -t ed25519 -N "" -C "ciznia@<host>" -f "$W/id_ed25519"
+export GNUPGHOME="$W/gnupg"; mkdir -m700 "$GNUPGHOME"
+gpg --batch --pinentry-mode loopback --passphrase '' --quick-generate-key \
+  "Hosquet Gabriel (<host>) <hosquetgabriel@gmail.com>" ed25519 sign never
+FPR=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')
+gpg --batch --pinentry-mode loopback --passphrase '' --quick-add-key "$FPR" cv25519 encr never
 ```
 
-Add that public key to `.sops.yaml`, then on a machine that already decrypts
-re-encrypt the file for the new list, and push:
+Add the age key to `.sops.yaml`: a `secrets/<host>.yaml` rule with that key
+alone, and the key to the `secrets/secrets.yaml` rule. Then write the host file:
 
 ```bash
-sops updatekeys secrets/secrets.yaml
+{ echo "ssh_private_key: |"; sed 's/^/    /' "$W/id_ed25519"
+  echo "gpg_private_key: |"; gpg --armor --export-secret-keys "$FPR" | sed 's/^/    /'; } |
+  sops encrypt --filename-override secrets/<host>.yaml \
+    --input-type yaml --output-type yaml /dev/stdin > secrets/<host>.yaml
+cat "$W/id_ed25519.pub"; echo "$FPR"; gpg --armor --export "$FPR"   # public halves
+rm -rf "$W"; unset GNUPGHOME
 ```
 
-Enable `ciznia.secrets` in the host's `home/<host>.nix` and switch.
+On a machine that already decrypts, `sops updatekeys secrets/secrets.yaml` so
+the new machine reads the shared file too. In `home/<host>.nix`, enable
+`ciznia.secrets` with `host` and `sshPublicKey`, and set `ciznia.git.signingKey`
+to `$FPR`. Add the ssh key (authentication) and the gpg public key to GitHub,
+**then** switch: the switch replaces the key ssh uses to reach GitHub.
 
-**The first machine** has nothing to re-encrypt: add its key to `.sops.yaml`,
-then `sops secrets/secrets.yaml` opens an empty file in `$EDITOR`. Fill in the
-names above (the private keys as YAML block scalars, `|`) and save.
+Machines with their own keys: **atlas**. glados and pbody still get the old
+shared key from Ansible.
 
-Recipients today: **atlas**.
-
-**Editing** a value: `sops secrets/secrets.yaml` on any recipient machine.
+**Editing** a value: `sops secrets/<file>.yaml` on a recipient machine.
 
 Nix itself stays secret-free: it may reference non-secret identity (git email,
-the signing-key fingerprint, the ssh public key), never key material. Ansible
-still provisions the keys on machines without `ciznia.secrets`, until each
-machine gets its own ssh and gpg keys.
+signing-key fingerprints, ssh public keys), never key material. Ansible still
+provisions the shared keys on machines without `ciznia.secrets`, until each has
+its own.

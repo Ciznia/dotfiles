@@ -159,7 +159,7 @@
           gnupg # gpg: import/list secret keys (keys role)
           openssh # ssh-keygen: one-time key generation for the vault
           pass # password store: re-encrypt on GPG rotation (pass role)
-          sops # edit secrets/secrets.yaml
+          sops # edit secrets/*.yaml
           age # age-keygen: one key per machine (sops recipients)
         ];
       };

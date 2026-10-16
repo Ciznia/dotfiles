@@ -1,7 +1,7 @@
 # Ansible
 
 > **Legacy.** Secrets are moving to sops-nix ([NIX.md](NIX.md#secrets)). This
-> playbook stays for machines that don't decrypt `secrets/secrets.yaml` yet, and
+> playbook stays for machines without their own keys in `secrets/<host>.yaml`, and
 > goes away once each machine has its own ssh and gpg keys.
 
 Ansible is the **preflight** half of this repo. Nix declares the system; Ansible
