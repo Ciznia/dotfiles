@@ -300,17 +300,16 @@ in Vaultwarden (vault.hosquet.com, item `gpg master key`, armored in the notes)
 and is only pulled into a throwaway keyring to certify a new subkey. Every
 machine also gets the master's encryption subkey, for the password store.
 
-On a new machine nothing needs remembering (`ciznia.machineKeys`):
+On a new machine nothing needs remembering (`ciznia.machineKeys`): after the switch,
+a login shell that finds no ssh key of this machine's own (none, or the old
+sops link) or no gpg signing subkey of its own asks to run
+`scripts/machine-keys.sh` (from `~/dotfiles`, see `ciznia.machineKeys.repo`).
+Answer `y` and type the Vaultwarden password; the prompt stays silent once both
+exist. Both keys come from the script in one go, so they reach GitHub together.
+It can't run during the switch: activation has no terminal to ask in.
 
-- **The switch** generates `~/.ssh/id_ed25519` (no passphrase) when it's missing,
-  or still the old sops link, and prints its public key.
-- **The next login shell** sees there's no signing subkey of this machine's own
-  and asks to run `scripts/machine-keys.sh` (from `~/dotfiles`, see
-  `ciznia.machineKeys.repo`). Answer `y` and type the Vaultwarden password; the
-  prompt stays silent once the subkey exists. It can't run during the switch:
-  activation has no terminal to ask in.
-
-The script adds a signing subkey without expiry, keeps only the subkeys in
+The script generates `~/.ssh/id_ed25519` (no passphrase) unless this machine
+already has one, adds a signing subkey without expiry, keeps only the subkeys in
 `~/.gnupg`, and writes the public key, with every machine's subkey, to
 `keys/gpg.asc`. Then:
 

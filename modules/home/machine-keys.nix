@@ -8,26 +8,28 @@
   sshKey = "${config.home.homeDirectory}/.ssh/id_ed25519";
   gpg = "${config.programs.gpg.package}/bin/gpg";
 
-  # Asks to run scripts/machine-keys.sh while this machine has no gpg signing
-  # subkey of its own. In a login shell, not at activation: the script needs
-  # the Vaultwarden password, and activation has no terminal.
+  # Asks to run scripts/machine-keys.sh while this machine lacks its own ssh key
+  # (none, or the old shared one's sops link) or its own gpg signing subkey.
+  # The script makes both in one go, so they reach GitHub together. In a login
+  # shell, not at activation: it needs the Vaultwarden password, and activation
+  # has no terminal.
   check = pkgs.writeShellScript "machine-keys-check" ''
-    ${gpg} --batch --with-colons --list-secret-keys ${config.ciznia.git.signingKey} 2>/dev/null |
-      ${pkgs.gawk}/bin/awk -F: '$1 == "ssb" && $12 ~ /s/ && $15 != "#" { found = 1 } END { exit !found }' &&
+    if [ -f ${sshKey} ] && [ ! -L ${sshKey} ] &&
+      ${gpg} --batch --with-colons --list-secret-keys ${config.ciznia.git.signingKey} 2>/dev/null |
+      ${pkgs.gawk}/bin/awk -F: '$1 == "ssb" && $12 ~ /s/ && $15 != "#" { found = 1 } END { exit !found }'; then
       exit 0
+    fi
     script=${cfg.repo}/scripts/machine-keys.sh
     [ -x "$script" ] || exit 0
-    read -r -p "This machine has no gpg signing subkey yet. Run machine-keys now? [y/N] " answer
+    read -r -p "This machine has no ssh key or gpg signing subkey of its own yet. Run machine-keys now? [y/N] " answer
     case $answer in
       [yY]*) "$script" ;;
     esac
   '';
 in {
-  # Each machine's own identity (docs/NIX.md, Machine keys). The ssh key needs no
-  # input, so activation makes it; the gpg subkey needs the master from
-  # Vaultwarden, so a login shell offers to run the script.
+  # Each machine's own identity (docs/NIX.md, Machine keys).
   options.ciznia.machineKeys = {
-    enable = lib.mkEnableOption "per-machine ssh key and gpg subkey prompt";
+    enable = lib.mkEnableOption "the login prompt to make this machine's ssh key and gpg subkey";
 
     repo = lib.mkOption {
       type = lib.types.str;
@@ -37,19 +39,6 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # A link is what the old shared key (sops) left behind.
-    home.activation.machineSshKey = lib.hm.dag.entryAfter ["linkGeneration"] ''
-      if [ -L ${sshKey} ] || [ ! -e ${sshKey} ]; then
-        run mkdir -p "$(dirname ${sshKey})"
-        run chmod 700 "$(dirname ${sshKey})"
-        run rm -f ${sshKey} ${sshKey}.pub
-        run ${pkgs.openssh}/bin/ssh-keygen -q -t ed25519 -N "" \
-          -C "${config.home.username}@$(${pkgs.coreutils}/bin/uname -n)" -f ${sshKey}
-        echo "New ssh key for this machine, add it on GitHub (Settings > SSH keys):"
-        run cat ${sshKey}.pub
-      fi
-    '';
-
     programs.zsh.initContent = lib.mkIf config.programs.zsh.enable ''
       [[ -o login && -t 0 ]] && ${check}
     '';
