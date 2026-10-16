@@ -3,8 +3,8 @@
 # subkey certified by the master key, which lives only in Vaultwarden (rbw).
 # The machine keeps the subkeys, never the master. See docs/NIX.md, Machine keys.
 #
-#   scripts/machine-keys.sh store-master   # once, where the full master still is
 #   scripts/machine-keys.sh                # on each machine (safe to re-run)
+#   scripts/machine-keys.sh store-master   # only the upload of a full local master
 set -euo pipefail
 
 MASTER=A8A7205E2FD4672A77058657654E6EA7882F6671
@@ -87,9 +87,16 @@ setup_gpg() {
     return
   fi
 
+  rbw unlocked >/dev/null 2>&1 || rbw unlock
+  rbw sync
+  if ! rbw get "$ITEM" >/dev/null 2>&1; then
+    # First machine: the full master is still in this keyring. A subshell, so
+    # its scratch keyring is wiped before ours is made.
+    (store_master)
+  fi
+
   local home=$REAL_GNUPGHOME
   scratch_gnupghome
-  rbw sync
   rbw get --field notes "$ITEM" | gpg --batch --import
   [ ! -f "$PUBKEY" ] || gpg --batch --import "$PUBKEY"
   [ "$(primary_secret)" = full ] || die "'$ITEM' in Vaultwarden is not the full secret key $MASTER"
@@ -119,8 +126,10 @@ setup_gpg() {
 case ${1:-} in
   store-master) store_master ;;
   "")
-    setup_ssh
+    # gpg first: it is the part that can fail (Vaultwarden), and the ssh key
+    # should only appear together with the subkey.
     setup_gpg
+    setup_ssh
     cat <<EOF
 
 ssh public key, for GitHub (Settings > SSH keys):

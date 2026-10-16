@@ -301,7 +301,7 @@ and is only pulled into a throwaway keyring to certify a new subkey. Every
 machine also gets the master's encryption subkey, for the password store.
 
 On a new machine nothing needs remembering (`ciznia.machineKeys`): after the switch,
-a login shell that finds no ssh key of this machine's own (none, or the old
+which only prints a reminder, the next interactive shell that finds no ssh key of this machine's own (none, or the old
 sops link) or no gpg signing subkey of its own asks to run
 `scripts/machine-keys.sh` (from `~/dotfiles`, see `ciznia.machineKeys.repo`).
 Answer `y` and type the Vaultwarden password; the prompt stays silent once both
@@ -320,8 +320,8 @@ already has one, adds a signing subkey without expiry, keeps only the subkeys in
 git signs with the master's fingerprint, without `!`, so gpg picks the newest
 signing subkey whose secret is on the machine: its own. No per-host pin.
 
-`scripts/machine-keys.sh store-master` puts the master into Vaultwarden, once,
-from a keyring that still has it in full.
+On the first machine, where the full master is still in the keyring and not yet
+in Vaultwarden, the script uploads it first (`store-master` does only that).
 
 **Retiring a machine:** delete its ssh key on GitHub, and revoke its subkey
 (`gpg --edit-key`, `key N`, `revkey`, in a keyring with the master), then
