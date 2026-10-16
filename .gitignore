@@ -1,4 +1,4 @@
-# Ansible vault password file — NEVER commit
+# Old Ansible vault password, still lying around in some clones — NEVER commit
 .vault_pass
 **/.vault_pass
 

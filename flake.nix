@@ -136,29 +136,20 @@
       default = pkgs.mkShell {
         inherit (self.checks.${pkgs.stdenv.hostPlatform.system}.pre-commit) shellHook;
         packages = with pkgs; [
-          # Ansible
-          ansible
-          ansible-lint
-          cowsay
-
-          # Gives a stable `python3` on PATH for
-          # `ansible_python_interpreter: "{{ ansible_playbook_python }}"`,
-          # instead of a hardcoded FHS path like /usr/bin/python3 that
-          # doesn't exist on NixOS.
-          python3
-
           # Nix
           alejandra
 
           # Other
+          cowsay
           git
           git-lfs # LFS-backed assets (images/video/pdf)
           openssl # To generate passwords
 
           # Keys
-          gnupg # gpg: import/list secret keys (keys role)
-          openssh # ssh-keygen: one-time key generation for the vault
-          pass # password store: re-encrypt on GPG rotation (pass role)
+          gnupg
+          openssh # ssh-keygen
+          pass # password store, until gopass replaces it
+          rbw # Vaultwarden CLI: the gpg master key (scripts/machine-keys.sh)
           sops # edit secrets/secrets.yaml
           age # age-keygen: one key per machine (sops recipients)
         ];

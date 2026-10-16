@@ -5,6 +5,7 @@
   # off with a plain `= false` (see docs/NIX.md). git pulls in gpg + gpg-agent.
   ciznia = {
     git.enable = lib.mkDefault true;
+    rbw.enable = lib.mkDefault true;
 
     shell.enable = lib.mkDefault true;
     nvim.enable = lib.mkDefault true;

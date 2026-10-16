@@ -11,6 +11,7 @@
     ./git.nix
     ./k8s.nix
     ./nvim.nix
+    ./rbw.nix
     ./secrets.nix
     ./shell.nix
     ./terminal.nix

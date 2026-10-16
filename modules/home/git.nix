@@ -14,7 +14,8 @@ in {
     signingKey = lib.mkOption {
       type = lib.types.str;
       default = "A8A7205E2FD4672A77058657654E6EA7882F6671";
-      description = "Fingerprint of the GPG key that signs commits (imported by ciznia.secrets).";
+      # A machine that ran scripts/machine-keys.sh pins its own subkey: "<subkey fpr>!".
+      description = "GPG key (fingerprint) that signs commits.";
     };
   };
 

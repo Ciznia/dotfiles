@@ -1,9 +1,9 @@
 # Nix — system & user configuration
 
 Nix owns everything declarative: the OS on NixOS hosts, and the **user
-environment** (home-manager) on every host. Secrets are sops-encrypted
-(see [Secrets](#secrets)); [ANSIBLE.md](ANSIBLE.md) is the older path, kept for
-machines that don't decrypt them yet.
+environment** (home-manager) on every host. Tokens are sops-encrypted
+(see [Secrets](#secrets)); ssh and gpg keys are per machine
+(see [Machine keys](#machine-keys)).
 
 ## Hosts
 
@@ -228,8 +228,9 @@ holds sockets in WSLg's layer), so apply a change to it with
 ## Testing
 
 **Fresh NixOS-WSL bootstrap** — `scripts/test-nixos-wsl.ps1` (Windows
-PowerShell) imports a clean NixOS-WSL, clones the repo, runs the keys playbook
-and switches to a host, deleting the instance if any step fails. Push the
+PowerShell) imports a clean NixOS-WSL, clones the repo and switches to a host,
+deleting the instance if any step fails. The instance is no sops recipient, so
+its `sops-nix.service` fails; the switch itself doesn't. Push the
 branch first:
 
 ```powershell
@@ -249,14 +250,12 @@ Runs from WSL (WSLg shows the window) or any Linux; slow without nested KVM.
 
 ## Secrets
 
-Keys and tokens live encrypted in `secrets/secrets.yaml` (sops, key names in
-clear, values encrypted) and are decrypted at login by sops-nix
-(`ciznia.secrets`, a home-manager user service, `sops-nix.service`):
+Tokens live encrypted in `secrets/secrets.yaml` (sops, key names in clear,
+values encrypted) and are decrypted at login by sops-nix (`ciznia.secrets`, a
+home-manager user service, `sops-nix.service`):
 
 | Secret             | Lands at                                                  |
 |--------------------|-----------------------------------------------------------|
-| `ssh_private_key`  | `~/.ssh/id_ed25519`, a link into `$XDG_RUNTIME_DIR` (tmpfs) |
-| `gpg_private_key`  | imported into the keyring by `gpg-import.service`         |
 | `wakatime_api_key` | `~/.wakatime.cfg`, rendered from a template (only with `ciznia.secrets.wakatime.enable`) |
 
 Each machine has **its own age key** in `~/.config/sops/age/keys.txt`, never
@@ -283,13 +282,44 @@ Enable `ciznia.secrets` in the host's `home/<host>.nix` and switch.
 
 **The first machine** has nothing to re-encrypt: add its key to `.sops.yaml`,
 then `sops secrets/secrets.yaml` opens an empty file in `$EDITOR`. Fill in the
-names above (the private keys as YAML block scalars, `|`) and save.
+names above and save.
 
 Recipients today: **atlas**.
 
 **Editing** a value: `sops secrets/secrets.yaml` on any recipient machine.
 
 Nix itself stays secret-free: it may reference non-secret identity (git email,
-the signing-key fingerprint, the ssh public key), never key material. Ansible
-still provisions the keys on machines without `ciznia.secrets`, until each
-machine gets its own ssh and gpg keys.
+the signing-key fingerprint), never key material.
+
+## Machine keys
+
+Each machine has **its own ssh key and gpg signing subkey**, so retiring one
+machine revokes only its keys. The gpg master key
+(`A8A7205E2FD4672A77058657654E6EA7882F6671`) is never on a machine: it lives
+in Vaultwarden (vault.hosquet.com, item `gpg master key`, armored in the notes)
+and is only pulled into a throwaway keyring to certify a new subkey. Every
+machine also gets the master's encryption subkey, for the password store.
+
+On a new machine, after the first switch (it configures `rbw`):
+
+```bash
+nix develop
+scripts/machine-keys.sh
+```
+
+It generates `~/.ssh/id_ed25519` (no passphrase) unless one exists, adds a
+signing subkey without expiry, keeps only the subkeys in `~/.gnupg`, and
+writes the public key, with every machine's subkey, to `keys/gpg.asc`. Then:
+
+1. Add the printed ssh public key on GitHub.
+2. Commit `keys/gpg.asc`, and on GitHub replace the gpg key with it. Already
+   verified commits stay verified.
+3. Pin the subkey in `home/<host>.nix` (`ciznia.git.signingKey = "<fpr>!";`),
+   as the script prints.
+
+`scripts/machine-keys.sh store-master` puts the master into Vaultwarden, once,
+from a keyring that still has it in full.
+
+**Retiring a machine:** delete its ssh key on GitHub, and revoke its subkey
+(`gpg --edit-key`, `key N`, `revkey`, in a keyring with the master), then
+publish `keys/gpg.asc` again.
