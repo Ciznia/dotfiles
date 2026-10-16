@@ -148,7 +148,7 @@
           # Keys
           gnupg
           openssh # ssh-keygen
-          pass # password store, until gopass replaces it
+          gopass # password store
           rbw # Vaultwarden CLI: the gpg master key (scripts/machine-keys.sh)
           sops # edit secrets/secrets.yaml
           age # age-keygen: one key per machine (sops recipients)

@@ -12,6 +12,7 @@
     ./k8s.nix
     ./machine-keys.nix
     ./nvim.nix
+    ./passwords.nix
     ./rbw.nix
     ./secrets.nix
     ./shell.nix

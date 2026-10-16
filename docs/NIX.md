@@ -53,7 +53,7 @@ What each host turns on:
 
 | Flag                                                                     | glados | atlas | pbody |
 |--------------------------------------------------------------------------|:------:|:-----:|:-----:|
-| home: `git`, `rbw`, `machineKeys`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
+| home: `git`, `rbw`, `machineKeys`, `passwords`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
 | home: `gaming`                                                           |   ✓    |       |   ✓   |
 | home: `desktop` (qtile, kitty, dunst, lock)                              |   ✓    |       |       |
 | nixos: `base`, `fonts`, `virtualisation.docker`                          |   ✓    |   ✓   |       |
@@ -326,3 +326,15 @@ in Vaultwarden, the script uploads it first (`store-master` does only that).
 **Retiring a machine:** delete its ssh key on GitHub, and revoke its subkey
 (`gpg --edit-key`, `key N`, `revkey`, in a keyring with the master), then
 publish `keys/gpg.asc` again.
+
+## Passwords
+
+gopass (`ciznia.passwords`; `pass` runs it too) reads the stores, encrypted to
+the master's encryption subkey that every machine gets from the script above.
+The root store is `Ciznia/passwords`, and `TermOxide/.password-store` is
+mounted as `termoxide/`, readable once its recipients list your key.
+
+Once a machine has its keys, the next interactive shell without a store offers
+to clone them (`gopass clone`). gopass then syncs them with their git remotes on
+its own (`core.autosync`); its settings stay in `~/.config/gopass/config`,
+which gopass writes itself.
