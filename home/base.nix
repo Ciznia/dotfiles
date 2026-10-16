@@ -6,6 +6,7 @@
   ciznia = {
     git.enable = lib.mkDefault true;
     rbw.enable = lib.mkDefault true;
+    machineKeys.enable = lib.mkDefault true;
 
     shell.enable = lib.mkDefault true;
     nvim.enable = lib.mkDefault true;

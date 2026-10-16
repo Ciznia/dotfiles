@@ -53,7 +53,7 @@ What each host turns on:
 
 | Flag                                                                     | glados | atlas | pbody |
 |--------------------------------------------------------------------------|:------:|:-----:|:-----:|
-| home: `git`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
+| home: `git`, `rbw`, `machineKeys`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
 | home: `gaming`                                                           |   ✓    |       |   ✓   |
 | home: `desktop` (qtile, kitty, dunst, lock)                              |   ✓    |       |       |
 | nixos: `base`, `fonts`, `virtualisation.docker`                          |   ✓    |   ✓   |       |
@@ -300,22 +300,26 @@ in Vaultwarden (vault.hosquet.com, item `gpg master key`, armored in the notes)
 and is only pulled into a throwaway keyring to certify a new subkey. Every
 machine also gets the master's encryption subkey, for the password store.
 
-On a new machine, after the first switch (it configures `rbw`):
+On a new machine nothing needs remembering (`ciznia.machineKeys`):
 
-```bash
-nix develop
-scripts/machine-keys.sh
-```
+- **The switch** generates `~/.ssh/id_ed25519` (no passphrase) when it's missing,
+  or still the old sops link, and prints its public key.
+- **The next login shell** sees there's no signing subkey of this machine's own
+  and asks to run `scripts/machine-keys.sh` (from `~/dotfiles`, see
+  `ciznia.machineKeys.repo`). Answer `y` and type the Vaultwarden password; the
+  prompt stays silent once the subkey exists. It can't run during the switch:
+  activation has no terminal to ask in.
 
-It generates `~/.ssh/id_ed25519` (no passphrase) unless one exists, adds a
-signing subkey without expiry, keeps only the subkeys in `~/.gnupg`, and
-writes the public key, with every machine's subkey, to `keys/gpg.asc`. Then:
+The script adds a signing subkey without expiry, keeps only the subkeys in
+`~/.gnupg`, and writes the public key, with every machine's subkey, to
+`keys/gpg.asc`. Then:
 
 1. Add the printed ssh public key on GitHub.
 2. Commit `keys/gpg.asc`, and on GitHub replace the gpg key with it. Already
    verified commits stay verified.
-3. Pin the subkey in `home/<host>.nix` (`ciznia.git.signingKey = "<fpr>!";`),
-   as the script prints.
+
+git signs with the master's fingerprint, without `!`, so gpg picks the newest
+signing subkey whose secret is on the machine: its own. No per-host pin.
 
 `scripts/machine-keys.sh store-master` puts the master into Vaultwarden, once,
 from a keyring that still has it in full.

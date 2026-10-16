@@ -14,7 +14,8 @@ in {
     signingKey = lib.mkOption {
       type = lib.types.str;
       default = "A8A7205E2FD4672A77058657654E6EA7882F6671";
-      # A machine that ran scripts/machine-keys.sh pins its own subkey: "<subkey fpr>!".
+      # The master, without "!": gpg then signs with the newest signing subkey
+      # whose secret is here, i.e. this machine's own (scripts/machine-keys.sh).
       description = "GPG key (fingerprint) that signs commits.";
     };
   };

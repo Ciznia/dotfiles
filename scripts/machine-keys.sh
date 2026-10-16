@@ -126,8 +126,7 @@ case ${1:-} in
 ssh public key, for GitHub (Settings > SSH keys):
   $(cat "$SSH_KEY.pub")
 
-gpg signing subkey: $sub
-  Pin it in home/$(hostname).nix:  ciznia.git.signingKey = "$sub!";
+gpg signing subkey: $sub (git picks it, no pin needed)
   If keys/gpg.asc changed, commit it and replace the gpg key on GitHub with it.
 EOF
     ;;

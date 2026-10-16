@@ -10,6 +10,7 @@
     ./gaming.nix
     ./git.nix
     ./k8s.nix
+    ./machine-keys.nix
     ./nvim.nix
     ./rbw.nix
     ./secrets.nix
