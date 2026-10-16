@@ -59,12 +59,12 @@ store_master() {
   scratch_gnupghome
   GNUPGHOME=$home gpg --batch --armor --export-secret-keys "$MASTER" >"$tmp/master.asc"
 
-  # rbw add takes the item from $EDITOR: first line the password (left
+  # rbw add takes the item from $VISUAL, else $EDITOR: first line the password (left
   # empty), the rest the notes.
   # shellcheck disable=SC2016 # $1 is the file rbw passes to the editor
   printf '#!/bin/sh\n{ echo; cat "%s"; } > "$1"\n' "$tmp/master.asc" >"$tmp/editor"
   chmod +x "$tmp/editor"
-  EDITOR=$tmp/editor rbw add "$ITEM"
+  VISUAL=$tmp/editor EDITOR=$tmp/editor rbw add "$ITEM"
   rbw sync
 
   rbw get --field notes "$ITEM" | gpg --batch --import
