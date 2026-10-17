@@ -56,7 +56,7 @@ What each host turns on:
 | home: `git`, `rbw`, `machineKeys`, `passwords`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
 | home: `gaming`                                                           |   ✓    |       |   ✓   |
 | home: `desktop` (qtile, kitty, dunst, lock)                              |   ✓    |       |       |
-| home: `vscode` (settings + extensions from Nix)                          |   ✓    |       |       |
+| home: `vscode` (settings + extensions from Nix; atlas: `vscode.server`)  |   ✓    |   ✓   |       |
 | nixos: `base`, `fonts`, `virtualisation.docker`                          |   ✓    |   ✓   |       |
 | nixos: `console`, `desktop`, `gaming`, `laptop`, `usb`, `secureBoot`, `virtualisation.{libvirt,waydroid}` | ✓ | | |
 

@@ -11,6 +11,9 @@
     wakatime.enable = true;
   };
 
+  # VS Code is the Windows app; Nix fills the server it runs in WSL.
+  ciznia.vscode.server.enable = true;
+
   # atlas: NixOS-WSL, integrated home-manager. username/homeDirectory come from
   # the system user (ciznia, via wsl.defaultUser), so no standalone contract.
 
