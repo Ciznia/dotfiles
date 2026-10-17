@@ -18,5 +18,6 @@
     ./shell.nix
     ./terminal.nix
     ./theme.nix
+    ./vscode.nix
   ];
 }

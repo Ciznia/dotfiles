@@ -33,6 +33,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-vscode-extensions = {
+      url = "github:nix-community/nix-vscode-extensions";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -71,7 +76,7 @@
       import nixpkgs {
         inherit system;
         config.allowUnfree = true;
-        overlays = [stableOverlay];
+        overlays = [stableOverlay inputs.nix-vscode-extensions.overlays.default];
       };
 
     homeSharedModules = [
@@ -108,7 +113,7 @@
             home-manager.nixosModules.home-manager
             {
               nixpkgs.config.allowUnfree = true;
-              nixpkgs.overlays = [stableOverlay];
+              nixpkgs.overlays = [stableOverlay inputs.nix-vscode-extensions.overlays.default];
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.extraSpecialArgs = {inherit inputs username;};
