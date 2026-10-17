@@ -8,7 +8,6 @@
 
   config = lib.mkIf config.ciznia.dev.enable {
     home.packages = with pkgs; [
-      vscode
       insomnia
       tokei
       wakatime-cli # also feeds the zsh/bash/nvim wakatime plugins

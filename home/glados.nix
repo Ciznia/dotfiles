@@ -8,6 +8,7 @@
       displayProfiles = ["docked" "mobile"]; # services.autorandr in hosts/glados
     };
     gaming.enable = true;
+    vscode.enable = true; # settings + extensions from Nix (WSL hosts use the Windows app)
   };
 
   # Prism Launcher on the NVIDIA GPU.
