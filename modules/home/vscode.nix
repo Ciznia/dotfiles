@@ -117,6 +117,17 @@
     ];
   serverSettings = lib.filterAttrs (name: _: !uiOnly name) settings;
 
+  pin = cfg.server.pin;
+  # The tarball unpacked as the Windows app would: bin/<commit>/{node,bin/code-server,...}.
+  # Its node is a stock glibc binary, run through nix-ld (modules/nixos/base.nix).
+  pinnedServer = pkgs.runCommand "vscode-server-${pin.version}" {
+    src = pkgs.fetchurl {
+      name = "vscode-server-${pin.commit}.tar.gz";
+      url = "https://update.code.visualstudio.com/commit:${pin.commit}/server-linux-x64/stable";
+      inherit (pin) hash;
+    };
+  } "mkdir $out && tar xzf $src -C $out --strip-components=1";
+
   serverDir = ".vscode-server";
   extensionDir = "${serverDir}/extensions";
 in {
@@ -141,6 +152,51 @@ in {
     # the extensions are linked into its extensions dir. Themes run in the
     # Windows app, so they aren't linked.
     server.enable = lib.mkEnableOption "settings and extensions for the VS Code server (WSL)";
+
+    # Opt-in: the server binary itself from Nix, instead of the tarball the
+    # Windows app downloads into ~/.vscode-server/bin/<commit> on first connect.
+    #
+    # Gain: the server is pinned and hash-checked like everything else here,
+    # it's in place before the first connect (no download, works offline), and
+    # a reinstall gets the same build back.
+    #
+    # The catch: the Windows app only talks to the server built from its own
+    # commit. It looks for bin/<commit>; any other build is ignored and it
+    # downloads its own again. So this pin has to follow the Windows app:
+    #   - when Windows VS Code updates, the pin goes stale. Nothing breaks (the
+    #     app falls back to downloading its server), but the pin stops being
+    #     used until `commit`/`version`/`hash` below are bumped to the new
+    #     build: the commit is in "Help > About", the hash comes from
+    #       nix-prefetch-url https://update.code.visualstudio.com/commit:<commit>/server-linux-x64/stable
+    #       nix hash convert --hash-algo sha256 --to sri <hash>
+    #   - to stop that churn, turn off the app's auto-update on Windows
+    #     ("update.mode": "none") and update it on purpose, together with the pin.
+    #   - the server runs from a read-only store path. It keeps its state in
+    #     ~/.vscode-server/data, not next to itself, but if a future build ever
+    #     writes into its own folder, it fails: turn this off.
+    #   - a server the app already downloaded for the same commit is a real
+    #     folder where the link goes; the switch removes it first. A running
+    #     server loses its files under it: reload the window after switching.
+    # It's not the nixpkgs VS Code: nixpkgs lags Windows releases (1.127 here
+    # while Windows is on 1.142), and both are the same Microsoft binary anyway.
+    server.pin = {
+      enable = lib.mkEnableOption "the VS Code server binary from Nix, pinned to the Windows app's commit";
+      version = lib.mkOption {
+        type = lib.types.str;
+        default = "1.142.0";
+        description = "Windows VS Code version the pin matches (for the store path name).";
+      };
+      commit = lib.mkOption {
+        type = lib.types.str;
+        default = "6d62b1d5dace93a33b3a6d3eca1317bd5e15bcb1";
+        description = "Windows VS Code commit (Help > About); the server must be built from it.";
+      };
+      hash = lib.mkOption {
+        type = lib.types.str;
+        default = "sha256-8e4oM8YyPuA+SdRjUeg0xEgRxT0UuhePXevbhKXreHY=";
+        description = "SRI hash of that commit's server-linux-x64 tarball.";
+      };
+    };
   };
 
   config = lib.mkMerge [
@@ -204,6 +260,19 @@ in {
         })
         extensions
       );
+    })
+
+    (lib.mkIf (cfg.server.enable && pin.enable) {
+      home.file."${serverDir}/bin/${pin.commit}".source = pinnedServer;
+
+      # A server the app downloaded for this commit is a real folder where the
+      # link goes, and home-manager won't replace a folder.
+      home.activation.vscodeServerPin = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+        dir=${config.home.homeDirectory}/${serverDir}/bin/${pin.commit}
+        if [ -d "$dir" ] && [ ! -L "$dir" ]; then
+          run rm -rf $VERBOSE_ARG "$dir"
+        fi
+      '';
     })
   ];
 }
