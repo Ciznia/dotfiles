@@ -238,13 +238,19 @@ in {
       home.file = lib.mkMerge (
         [
           {
-            # Kept beside the real file, which the activation below copies it to.
-            # Pretty-printed, so the file and "Compare with Saved" stay readable.
-            "${serverDir}/data/Machine/.settings-nix.json".source = (pkgs.formats.json {}).generate "settings.json" (serverSettings
-              // {
-                # The linked extensions are read-only store paths.
-                "extensions.autoUpdate" = "off"; # VS Code migrates the old `false` to this, writing the file
-              });
+            # Read-only, owned by Nix. Pretty-printed, so the file and "Compare
+            # with Saved" stay readable. force: a switch with the older writable
+            # copy left a real file here.
+            "${serverDir}/data/Machine/settings.json" = {
+              force = true;
+              source = (pkgs.formats.json {}).generate "settings.json" (serverSettings
+                // {
+                  # The linked extensions are read-only store paths. "off", not
+                  # false: VS Code migrates false to "off" and writes the file,
+                  # which fails on this read-only link.
+                  "extensions.autoUpdate" = "off";
+                });
+            };
 
             # The server tracks installed extensions in extensions.json. Linked
             # folders missing from it are ignored, so when the Nix set changes,
@@ -263,15 +269,6 @@ in {
         })
         extensions
       );
-
-      # Machine settings are a writable copy, reset to Nix's on every switch:
-      # extensions and the Windows app write to them (a read-only link failed
-      # with EROFS on connect). Changes made in the UI last until the next switch.
-      home.activation.vscodeServerSettings = lib.hm.dag.entryAfter ["linkGeneration"] ''
-        machine=${config.home.homeDirectory}/${serverDir}/data/Machine
-        run rm -f $VERBOSE_ARG "$machine/settings.json"
-        run install -m 644 "$machine/.settings-nix.json" "$machine/settings.json"
-      '';
     })
 
     (lib.mkIf (cfg.server.enable && pin.enable) {
