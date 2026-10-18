@@ -171,12 +171,13 @@ in {
     #       nix hash convert --hash-algo sha256 --to sri <hash>
     #   - to stop that churn, turn off the app's auto-update on Windows
     #     ("update.mode": "none") and update it on purpose, together with the pin.
-    #   - the server runs from a read-only store path. It keeps its state in
-    #     ~/.vscode-server/data, not next to itself, but if a future build ever
-    #     writes into its own folder, it fails: turn this off.
-    #   - a server the app already downloaded for the same commit is a real
-    #     folder where the link goes; the switch removes it first. A running
-    #     server loses its files under it: reload the window after switching.
+    #   - the server is a writable copy of the store path, not a link: it
+    #     copies files out of its own folder and later overwrites them, which
+    #     a read-only store path broke (Copilot Chat, EACCES). It costs the
+    #     disk space of a second copy (~400 MB).
+    #   - whenever the pin changes, the switch replaces bin/<commit>, including
+    #     a server the app downloaded itself. A running server loses its files
+    #     under it: reload the window after switching.
     # It's not the nixpkgs VS Code: nixpkgs lags Windows releases (1.127 here
     # while Windows is on 1.142), and both are the same Microsoft binary anyway.
     server.pin = {
@@ -237,7 +238,8 @@ in {
       home.file = lib.mkMerge (
         [
           {
-            "${serverDir}/data/Machine/settings.json".text = builtins.toJSON (serverSettings
+            # Kept beside the real file, which the activation below copies it to.
+            "${serverDir}/data/Machine/.settings-nix.json".text = builtins.toJSON (serverSettings
               // {
                 # The linked extensions are read-only store paths.
                 "extensions.autoUpdate" = false;
@@ -260,17 +262,38 @@ in {
         })
         extensions
       );
+
+      # Machine settings are a writable copy, reset to Nix's on every switch:
+      # extensions and the Windows app write to them (a read-only link failed
+      # with EROFS on connect). Changes made in the UI last until the next switch.
+      home.activation.vscodeServerSettings = lib.hm.dag.entryAfter ["linkGeneration"] ''
+        machine=${config.home.homeDirectory}/${serverDir}/data/Machine
+        run rm -f $VERBOSE_ARG "$machine/settings.json"
+        run install -m 644 "$machine/.settings-nix.json" "$machine/settings.json"
+      '';
     })
 
     (lib.mkIf (cfg.server.enable && pin.enable) {
-      home.file."${serverDir}/bin/${pin.commit}".source = pinnedServer;
-
-      # A server the app downloaded for this commit is a real folder where the
-      # link goes, and home-manager won't replace a folder.
-      home.activation.vscodeServerPin = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+      # Copied, not linked: the server copies files out of its own folder
+      # (Copilot Chat's CLI shim, into data/User/globalStorage) and later
+      # overwrites those copies, which fails when they inherit the store's
+      # read-only mode. A writable copy, replaced whenever the pin changes, keeps
+      # the pinned build without that. The marker records which store path the
+      # copy came from.
+      home.activation.vscodeServerPin = lib.hm.dag.entryAfter ["linkGeneration"] ''
         dir=${config.home.homeDirectory}/${serverDir}/bin/${pin.commit}
-        if [ -d "$dir" ] && [ ! -L "$dir" ]; then
+        marker=${config.home.homeDirectory}/${serverDir}/bin/.${pin.commit}.nix
+        if [ -L "$dir" ] || [ ! -d "$dir" ] || [ "$(cat "$marker" 2>/dev/null)" != ${pinnedServer} ]; then
           run rm -rf $VERBOSE_ARG "$dir"
+          run mkdir -p "$(dirname "$dir")"
+          run cp -r ${pinnedServer} "$dir"
+          run chmod -R u+w "$dir"
+          run eval "echo ${pinnedServer} > $marker"
+        fi
+        # Copies already made from a read-only store copy stay read-only.
+        storage=${config.home.homeDirectory}/${serverDir}/data/User/globalStorage
+        if [ -d "$storage" ]; then
+          run find "$storage" -type f ! -perm -u+w -exec chmod u+w {} +
         fi
       '';
     })
