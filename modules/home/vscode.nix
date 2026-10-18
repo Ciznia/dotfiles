@@ -243,7 +243,7 @@ in {
             "${serverDir}/data/Machine/.settings-nix.json".source = (pkgs.formats.json {}).generate "settings.json" (serverSettings
               // {
                 # The linked extensions are read-only store paths.
-                "extensions.autoUpdate" = false;
+                "extensions.autoUpdate" = "off"; # VS Code migrates the old `false` to this, writing the file
               });
 
             # The server tracks installed extensions in extensions.json. Linked
