@@ -1,6 +1,4 @@
 {
-  "workbench.colorTheme": "GitHub Dark Colorblind (Beta)",
-  "workbench.iconTheme": "vscode-icons",
   "workbench.editorAssociations": {
     "*.copilotmd": "vscode.markdown.preview.editor",
     "*.webm": "videoPreview.viewer"

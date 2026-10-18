@@ -56,7 +56,7 @@ What each host turns on:
 | home: `git`, `rbw`, `machineKeys`, `passwords`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
 | home: `gaming`                                                           |   ✓    |       |   ✓   |
 | home: `desktop` (qtile, kitty, dunst, lock)                              |   ✓    |       |       |
-| home: `vscode` (settings + extensions from Nix; atlas: `vscode.server`)  |   ✓    |   ✓   |       |
+| home: `vscode` (glados) / `vscode.server` (WSL: atlas, pbody)          |   ✓    |   ✓   |   ✓   |
 | nixos: `base`, `fonts`, `virtualisation.docker`                          |   ✓    |   ✓   |       |
 | nixos: `console`, `desktop`, `gaming`, `laptop`, `usb`, `secureBoot`, `virtualisation.{libvirt,waydroid}` | ✓ | | |
 
@@ -64,6 +64,9 @@ What each host turns on:
 `"sigma"` (oh-my-zsh theme). Theming is catppuccin macchiato
 ([catppuccin/nix](https://github.com/catppuccin/nix)), except where a program
 keeps its own colors (kitty, dunst, the TTY palette, the SDDM greeter).
+`ciznia.vscode.theme` flips VS Code between `"catppuccin"` (default) and
+`"github"` (GitHub Dark Colorblind, vscode-icons); both stay installed, so a
+switch is all it takes.
 
 ## Adding a new system
 

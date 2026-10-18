@@ -31,10 +31,6 @@
       usernamehw.errorlens
       zainchen.json
 
-      # Look
-      github.github-vscode-theme
-      vscode-icons-team.vscode-icons
-
       # Git and GitHub
       eamodio.gitlens
       github.vscode-github-actions
@@ -110,6 +106,17 @@
       wmanth.jar-viewer
     ]);
 
+  # Settings that only the app's window reads; the server ignores them.
+  uiOnly = name:
+    lib.any (prefix: lib.hasPrefix prefix name) [
+      "workbench."
+      "window."
+      "terminal.integrated"
+      "explorer.confirm"
+      "chat."
+    ];
+  serverSettings = lib.filterAttrs (name: _: !uiOnly name) settings;
+
   serverDir = ".vscode-server";
   extensionDir = "${serverDir}/extensions";
 in {
@@ -120,18 +127,30 @@ in {
     # extensions dir immutable.
     enable = lib.mkEnableOption "VS Code, settings and extensions from Nix";
 
+    # Both themes and both icon sets stay installed: changing this and
+    # switching is all it takes to flip between them.
+    theme = lib.mkOption {
+      type = lib.types.enum ["catppuccin" "github"];
+      default = "catppuccin";
+      description = "catppuccin = Macchiato, blue accent, catppuccin icons; github = GitHub Dark Colorblind, vscode-icons.";
+    };
+
     # WSL hosts: VS Code is the Windows app, which Nix doesn't reach. What it
     # runs on this side is the server it installs in ~/.vscode-server, so the
-    # same settings become the server's Machine settings and the extensions
-    # are linked into its extensions dir.
+    # settings minus the UI-only ones become the server's Machine settings and
+    # the extensions are linked into its extensions dir. Themes run in the
+    # Windows app, so they aren't linked.
     server.enable = lib.mkEnableOption "settings and extensions for the VS Code server (WSL)";
   };
 
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
-      # VS Code keeps its own theme (GitHub Dark Colorblind + vscode-icons), not
-      # catppuccin's.
-      catppuccin.vscode.profiles.default.enable = false;
+      # catppuccin/nix adds the catppuccin theme (built with the macchiato
+      # flavor and blue accent from theme.nix) and its icons, and selects them.
+      catppuccin.vscode.profiles.default = {
+        enable = true;
+        icons.enable = true;
+      };
 
       programs.vscode = {
         enable = true;
@@ -141,8 +160,19 @@ in {
         profiles.default = {
           enableUpdateCheck = false;
           enableExtensionUpdateCheck = false;
-          userSettings = settings;
-          inherit extensions;
+          userSettings = lib.mkMerge [
+            settings
+            (lib.mkIf (cfg.theme == "github") {
+              "workbench.colorTheme" = lib.mkForce "GitHub Dark Colorblind (Beta)";
+              "workbench.iconTheme" = lib.mkForce "vscode-icons";
+            })
+          ];
+          extensions =
+            extensions
+            ++ (with pkgs.vscode-extensions; [
+              github.github-vscode-theme
+              vscode-icons-team.vscode-icons
+            ]);
         };
       };
     })
@@ -151,8 +181,7 @@ in {
       home.file = lib.mkMerge (
         [
           {
-            # UI settings (theme, fonts) stay with the Windows app; the rest apply.
-            "${serverDir}/data/Machine/settings.json".text = builtins.toJSON (settings
+            "${serverDir}/data/Machine/settings.json".text = builtins.toJSON (serverSettings
               // {
                 # The linked extensions are read-only store paths.
                 "extensions.autoUpdate" = false;
