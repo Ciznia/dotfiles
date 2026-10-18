@@ -239,7 +239,8 @@ in {
         [
           {
             # Kept beside the real file, which the activation below copies it to.
-            "${serverDir}/data/Machine/.settings-nix.json".text = builtins.toJSON (serverSettings
+            # Pretty-printed, so the file and "Compare with Saved" stay readable.
+            "${serverDir}/data/Machine/.settings-nix.json".source = (pkgs.formats.json {}).generate "settings.json" (serverSettings
               // {
                 # The linked extensions are read-only store paths.
                 "extensions.autoUpdate" = false;
