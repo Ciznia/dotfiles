@@ -239,8 +239,10 @@ in {
         [
           {
             # Read-only, owned by Nix. Pretty-printed, so the file and "Compare
-            # with Saved" stay readable. force: a switch with the older writable
-            # copy left a real file here.
+            # with Saved" stay readable. force replaces a real file left here (by
+            # the earlier writable copy, or VS Code saving over the link), except
+            # one with identical content, which home-manager keeps: delete it and
+            # switch again if it should become the link.
             "${serverDir}/data/Machine/settings.json" = {
               force = true;
               source = (pkgs.formats.json {}).generate "settings.json" (serverSettings
