@@ -14,7 +14,7 @@
   # VS Code is the Windows app; Nix fills the server it runs in WSL.
   ciznia.vscode.server = {
     enable = true;
-    # Pinned to the Windows app's build; bump with it (see modules/home/vscode.nix).
+    # Pinned to the Windows app's build; bump with it (see modules/home/vscode/default.nix).
     pin.enable = true;
   };
 

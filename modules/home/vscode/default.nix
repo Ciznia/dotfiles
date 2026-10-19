@@ -8,7 +8,7 @@
   # Marketplace builds matched to the VS Code version, for what nixpkgs lacks.
   marketplace = (pkgs.forVSCodeVersion pkgs.vscode.version).vscode-marketplace;
 
-  settings = builtins.fromJSON (builtins.readFile ./vscode/settings.json);
+  settings = builtins.fromJSON (builtins.readFile ./settings.json);
 
   # nixpkgs first (some are patched to run on NixOS), the marketplace for the
   # rest. Language stacks that belong to one project come from that project's
