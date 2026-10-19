@@ -32,7 +32,11 @@ in {
         global = {
           alignment = "left";
           always_run_script = true;
-          browser = "${pkgs.firefox}/bin/firefox";
+          # The default browser: Zen while trying it (modules/home/zen), else Firefox.
+          browser =
+            if config.ciznia.zen.enable
+            then lib.getExe config.programs.zen-browser.finalPackage
+            else "${pkgs.firefox}/bin/firefox";
 
           font = "JetBrainsMono Nerd Font Mono 10";
           frame_color = "#8AADF4";

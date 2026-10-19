@@ -57,6 +57,7 @@ What each host turns on:
 | home: `gaming`                                                           |   ✓    |       |   ✓   |
 | home: `desktop` (qtile, kitty, dunst, lock)                              |   ✓    |       |       |
 | home: `vscode` (glados) / `vscode.server` (WSL: atlas, pbody)          |   ✓    |   ✓   |   ✓   |
+| home: `zen` (Zen browser next to Firefox; atlas via WSLg)                 |   ✓    |   ✓   |       |
 | nixos: `base`, `fonts`, `virtualisation.docker`                          |   ✓    |   ✓   |       |
 | nixos: `console`, `desktop`, `gaming`, `laptop`, `usb`, `secureBoot`, `virtualisation.{libvirt,waydroid}` | ✓ | | |
 

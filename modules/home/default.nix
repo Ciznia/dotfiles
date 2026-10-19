@@ -19,5 +19,6 @@
     ./terminal.nix
     ./theme.nix
     ./vscode
+    ./zen
   ];
 }
