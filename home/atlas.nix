@@ -11,6 +11,9 @@
     wakatime.enable = true;
   };
 
+  # Zen through WSLg, while trying it next to Firefox.
+  ciznia.zen.enable = true;
+
   # VS Code is the Windows app; Nix fills the server it runs in WSL.
   ciznia.vscode.server = {
     enable = true;
