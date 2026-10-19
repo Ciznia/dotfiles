@@ -1,8 +1,9 @@
 # Nix — system & user configuration
 
 Nix owns everything declarative: the OS on NixOS hosts, and the **user
-environment** (home-manager) on every host. Secrets (ssh/gpg/pass) belong to
-[ANSIBLE.md](ANSIBLE.md).
+environment** (home-manager) on every host. Tokens are sops-encrypted
+(see [Secrets](#secrets)); ssh and gpg keys are per machine
+(see [Machine keys](#machine-keys)).
 
 ## Hosts
 
@@ -48,6 +49,25 @@ can turn a shared feature off with a plain `= false`. Without `mkDefault`, a
 host's `= false` would be a conflict, not an override. Host-only features (the
 desktop) default to off and are enabled by their host.
 
+What each host turns on:
+
+| Flag                                                                     | glados | atlas | pbody |
+|--------------------------------------------------------------------------|:------:|:-----:|:-----:|
+| home: `git`, `rbw`, `machineKeys`, `passwords`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
+| home: `gaming`                                                           |   ✓    |       |   ✓   |
+| home: `desktop` (qtile, kitty, dunst, lock)                              |   ✓    |       |       |
+| home: `vscode` (glados) / `vscode.server` (WSL: atlas, pbody)          |   ✓    |   ✓   |   ✓   |
+| nixos: `base`, `fonts`, `virtualisation.docker`                          |   ✓    |   ✓   |       |
+| nixos: `console`, `desktop`, `gaming`, `laptop`, `usb`, `secureBoot`, `virtualisation.{libvirt,waydroid}` | ✓ | | |
+
+`ciznia.shell.prompt` picks the prompt: `"atomic"` (oh-my-posh, default) or
+`"sigma"` (oh-my-zsh theme). Theming is catppuccin macchiato
+([catppuccin/nix](https://github.com/catppuccin/nix)), except where a program
+keeps its own colors (kitty, dunst, the TTY palette, the SDDM greeter).
+`ciznia.vscode.theme` flips VS Code between `"catppuccin"` (default) and
+`"github"` (GitHub Dark Colorblind, vscode-icons); both stay installed, so a
+switch is all it takes.
+
 ## Adding a new system
 
 1. **Write the recipe** — `home/<name>.nix`: `imports = [ ./base.nix ]`, flip any
@@ -85,8 +105,8 @@ package is broken.
 ### Desktop
 
 X11 + SDDM + qtile + PipeWire, gated by `ciznia.desktop.enable`
-(`modules/nixos/desktop.nix` for the system half, `modules/home/desktop.nix`
-for the user half). X11 rather than Wayland because of the NVIDIA hybrid GPU
+(`modules/nixos/desktop.nix` for the system half, `modules/home/desktop/`
+for the user half; the qtile config is `modules/home/qtile/`). X11 rather than Wayland because of the NVIDIA hybrid GPU
 and qtile's more mature X11 backend; the Wayland qtile session is removed so
 SDDM can't pick it.
 
@@ -94,6 +114,11 @@ SDDM can't pick it.
   `nvidia-offload <cmd>` runs a program on the dGPU. Bus IDs `PCI:0:2:0` (Intel)
   and `PCI:1:0:0` (NVIDIA); check with `lspci -nnk | grep -EA3 'VGA|3D'` if a
   driver update misbehaves.
+- **Power:** TLP, from the nixos-hardware `common-pc-laptop` preset (with
+  `common-pc-ssd` for weekly fstrim and `common-cpu-intel`).
+- **Keys** that aren't obvious: Super+N opens the unread notifications,
+  Super+P / Super+Shift+P handle screens (below), Super+L locks, Super+T
+  toggles the touchpad, Super+Space drops down a terminal.
 - **Assets** (`assets/`) are **Git-LFS** tracked. Nix builds the checkout as-is,
   so a clone without git-lfs feeds pointer files to the desktop: the wallpaper
   never paints and the session *looks* frozen. The build fails on a pointer
@@ -106,10 +131,31 @@ at 0x0, HP X27c `HDMI-1-0` at 1920x0, primary, 164.92 Hz) and **mobile**
 (laptop only). They apply on hotplug, after suspend, at X start and at session
 start. The HDMI port is on the NVIDIA GPU, reached through reverse PRIME.
 
-To change a layout: arrange it with `xrandr`, then
-`autorandr --save docked --force`. Profiles in `~/.config/autorandr` override
-the same-named ones from the config. `autorandr --fingerprint` prints the EDIDs
+Shortcuts, numbered by `ciznia.desktop.displayProfiles` (1 = docked,
+2 = mobile; higher digits save/load `profile<N>`):
+
+- **Super+P**, then a digit loads that profile, or **Enter** opens arandr. arandr
+  runs through `nvidia-offload`: started on the iGPU it doesn't see the HDMI
+  port.
+- **Super+Shift+P**, then a digit saves the current layout under it
+  (`autorandr --save <name> --force`).
+
+Both show the profile map in a notification while waiting for the digit; Esc
+cancels. Saved profiles land in `~/.config/autorandr` and override the
+same-named ones from the config. `autorandr --fingerprint` prints the EDIDs
 for a new screen.
+
+### Notifications
+
+dunst popups still time out, but every notification is also appended to
+`~/.local/state/notifications/unread.jsonl`, so the list survives logout and
+reboot. The bar shows the unread count; **Super+N** (or a click on the count)
+lists them in rofi, to open one or mark it read.
+
+"Open" shows the notification again while the dunst instance that received it
+still holds it, so a click runs the sending app's own action. After a restart
+of dunst (or a reboot) it opens the notification's first link, or launches the
+app that sent it; the exact item can't be reopened then.
 
 ### Login and lock screen
 
@@ -167,24 +213,28 @@ bootctl status                    # expect: Secure Boot: enabled (user)
 BIOS, press **right Ctrl + right Shift + left Alt + F2**; the Copilot key works
 as right Ctrl. Then, under Secure Boot, use Reset To Setup Mode.
 
-## Key auto-loading (`ciznia.agent`)
-
-`modules/home/agent.nix` runs the Ansible `--tags agent` flow as a systemd user
-service, 30s after login and every 20h (under the 24h gpg-agent cache TTL). It
-unlocks the gpg and ssh keys in gpg-agent from the vault, so nothing is typed;
-details in [ANSIBLE.md](ANSIBLE.md#loading-the-key-at-startup). It needs
-`.vault_pass` at `ciznia.agent.repoPath` (default `~/dotfiles`).
+## WSL
 
 **WSL needs lingering.** `wsl` shells never start a systemd *user* instance, so
-without `users.users.<name>.linger = true` (set on atlas) neither gpg-agent nor
-this timer runs. Linger makes the first `nixos-rebuild switch` exit nonzero;
-the system still switches, and `wsl --terminate atlas` + reopen brings it up.
+without `users.users.<name>.linger = true` (set on atlas) gpg-agent and other
+user services don't run. Linger makes the first `nixos-rebuild switch` exit nonzero;
+the system still switches, and `wsl --terminate NixOS` + reopen brings it up.
+
+**WSLg hides the default user's runtime dir.** WSLg mounts its own tmpfs over
+`/run/user/<uid>` of the WSL default user, on top of systemd's: the user bus
+(`systemctl --user`) and sops-nix's secrets vanish under it. On atlas the
+`wslg-runtime-dir` unit drops that layer at boot, before `user@<uid>` starts
+(or the user bus lands in the layer it removes), and re-links WSLg's Wayland and
+PulseAudio sockets into systemd's dir. It only runs at boot (an open shell
+holds sockets in WSLg's layer), so apply a change to it with
+`switch-to-configuration boot` and `wsl --terminate NixOS`.
 
 ## Testing
 
 **Fresh NixOS-WSL bootstrap** — `scripts/test-nixos-wsl.ps1` (Windows
-PowerShell) imports a clean NixOS-WSL, clones the repo, runs the keys playbook
-and switches to a host, deleting the instance if any step fails. Push the
+PowerShell) imports a clean NixOS-WSL, clones the repo and switches to a host,
+deleting the instance if any step fails. The instance is no sops recipient, so
+its `sops-nix.service` fails; the switch itself doesn't. Push the
 branch first:
 
 ```powershell
@@ -201,11 +251,94 @@ ssh ciznia@localhost -p 2222      # logs, when the session misbehaves
 ```
 
 Runs from WSL (WSLg shows the window) or any Linux; slow without nested KVM.
-For the agent timer inside the VM, clone the repo to `~/dotfiles` and add
-`.vault_pass` first.
 
-## Secrets boundary
+## Secrets
 
-Nix stays secret-free: it may reference non-secret identity (git email, the
-signing-key fingerprint), never key material. Keys are provisioned by the
-Ansible preflight.
+Tokens live encrypted in `secrets/secrets.yaml` (sops, key names in clear,
+values encrypted) and are decrypted at login by sops-nix (`ciznia.secrets`, a
+home-manager user service, `sops-nix.service`):
+
+| Secret             | Lands at                                                  |
+|--------------------|-----------------------------------------------------------|
+| `wakatime_api_key` | `~/.wakatime.cfg`, rendered from a template (only with `ciznia.secrets.wakatime.enable`) |
+
+Each machine has **its own age key** in `~/.config/sops/age/keys.txt`, never
+committed, and `.sops.yaml` lists every machine's public key. A leaked key then
+points at one machine, and removing it from `.sops.yaml` cuts that machine off.
+Only turn `ciznia.secrets.enable` on for a host once it is a recipient.
+
+**Adding a machine.** On the new machine:
+
+```bash
+nix develop                                   # sops + age
+mkdir -p ~/.config/sops/age
+age-keygen -o ~/.config/sops/age/keys.txt     # prints the public key (age1...)
+```
+
+Add that public key to `.sops.yaml`, then on a machine that already decrypts
+re-encrypt the file for the new list, and push:
+
+```bash
+sops updatekeys secrets/secrets.yaml
+```
+
+Enable `ciznia.secrets` in the host's `home/<host>.nix` and switch.
+
+**The first machine** has nothing to re-encrypt: add its key to `.sops.yaml`,
+then `sops secrets/secrets.yaml` opens an empty file in `$EDITOR`. Fill in the
+names above and save.
+
+Recipients today: **atlas**.
+
+**Editing** a value: `sops secrets/secrets.yaml` on any recipient machine.
+
+Nix itself stays secret-free: it may reference non-secret identity (git email,
+the signing-key fingerprint), never key material.
+
+## Machine keys
+
+Each machine has **its own ssh key and gpg signing subkey**, so retiring one
+machine revokes only its keys. The gpg master key
+(`A8A7205E2FD4672A77058657654E6EA7882F6671`) is never on a machine: it lives
+in Vaultwarden (vault.hosquet.com, item `gpg master key`, armored in the notes)
+and is only pulled into a throwaway keyring to certify a new subkey. Every
+machine also gets the master's encryption subkey, for the password store.
+
+On a new machine nothing needs remembering (`ciznia.machineKeys`): after the switch,
+which only prints a reminder, the next interactive shell that finds no ssh key of this machine's own (none, or the old
+sops link) or no gpg signing subkey of its own asks to run
+`scripts/machine-keys.sh` (from `~/dotfiles`, see `ciznia.machineKeys.repo`).
+Answer `y` and type the Vaultwarden password; the prompt stays silent once both
+exist. Both keys come from the script in one go, so they reach GitHub together.
+It can't run during the switch: activation has no terminal to ask in.
+
+The script generates `~/.ssh/id_ed25519` (no passphrase) unless this machine
+already has one, adds a signing subkey without expiry, keeps only the subkeys in
+`~/.gnupg`, and writes the public key, with every machine's subkey, to
+`keys/gpg.asc`. Then:
+
+1. Add the printed ssh public key on GitHub.
+2. Commit `keys/gpg.asc`, and on GitHub replace the gpg key with it. Already
+   verified commits stay verified.
+
+git signs with the master's fingerprint, without `!`, so gpg picks the newest
+signing subkey whose secret is on the machine: its own. No per-host pin.
+
+On the first machine, where the full master is still in the keyring and not yet
+in Vaultwarden, the script uploads it first (`store-master` does only that).
+
+**Retiring a machine:** delete its ssh key on GitHub, and revoke its subkey
+(`gpg --edit-key`, `key N`, `revkey`, in a keyring with the master), then
+publish `keys/gpg.asc` again.
+
+## Passwords
+
+gopass (`ciznia.passwords`; `pass` runs it too) reads the stores, encrypted to
+the master's encryption subkey that every machine gets from the script above.
+The root store is `Ciznia/passwords`, and `TermOxide/.password-store` is
+mounted as `termoxide/`, readable once its recipients list your key.
+
+Once a machine has its keys, the next interactive shell without a store offers
+to clone them (`gopass clone`). gopass then syncs them with their git remotes on
+its own (`core.autosync`); its settings stay in `~/.config/gopass/config`,
+which gopass writes itself.
