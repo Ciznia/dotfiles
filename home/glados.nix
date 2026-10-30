@@ -9,6 +9,7 @@
     };
     gaming.enable = true;
     vscode.enable = true; # settings + extensions from Nix (WSL hosts use the Windows app)
+    zen.enable = true; # trying it next to Firefox
   };
 
   # Prism Launcher on the NVIDIA GPU.
