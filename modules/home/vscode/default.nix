@@ -17,7 +17,6 @@
     (with pkgs.vscode-extensions; [
       # Editing
       aaron-bond.better-comments
-      ban.spellright
       christian-kohler.npm-intellisense
       christian-kohler.path-intellisense
       editorconfig.editorconfig
@@ -184,17 +183,17 @@ in {
       enable = lib.mkEnableOption "the VS Code server binary from Nix, pinned to the Windows app's commit";
       version = lib.mkOption {
         type = lib.types.str;
-        default = "1.142.0";
+        default = "1.143.1";
         description = "Windows VS Code version the pin matches (for the store path name).";
       };
       commit = lib.mkOption {
         type = lib.types.str;
-        default = "6d62b1d5dace93a33b3a6d3eca1317bd5e15bcb1";
+        default = "e646868227c3e3a9e3f24277c8c7220be42c0be7";
         description = "Windows VS Code commit (Help > About); the server must be built from it.";
       };
       hash = lib.mkOption {
         type = lib.types.str;
-        default = "sha256-8e4oM8YyPuA+SdRjUeg0xEgRxT0UuhePXevbhKXreHY=";
+        default = "sha256-XMkR8Ax/12Kvofl4SF2WBM6sWYTyteZgfZgQkviUMmo=";
         description = "SRI hash of that commit's server-linux-x64 tarball.";
       };
     };
