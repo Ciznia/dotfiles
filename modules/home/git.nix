@@ -30,7 +30,60 @@ in {
         init.defaultBranch = "main";
         pull.rebase = true;
         push.autoSetupRemote = true;
+        # GitHub over ssh, even for https URLs (copied from a browser).
+        url."ssh://git@github.com/".insteadOf = "https://github.com/";
       };
+
+      # Global ignores (~/.config/git/ignore), from the old config.
+      ignores = [
+        # Project config files
+        ".pre-commit-config.yaml"
+        "compile_commands.json"
+
+        # C
+        ".cache"
+        "*.gc??"
+        "vgcore.*"
+
+        # Python
+        "venv"
+        "__pycache__"
+
+        # Web
+        "node_modules"
+        "dist"
+        "build"
+        "out"
+        ".vite"
+        ".next"
+        ".cursor"
+
+        # direnv
+        ".direnv"
+        ".envrc"
+
+        # Environment files (.env, .env.local, .env.dev.local, ...), not templates
+        ".env"
+        ".env.*"
+        "!.env*.example"
+
+        # Editor backups and locks
+        "*~"
+        "#*#"
+
+        # macOS
+        ".DS_Store"
+
+        # Nix build output
+        "result"
+
+        # IDEs
+        ".idea"
+        ".vs"
+      ];
+
+      # Global attributes (~/.config/git/attributes): LF in the repo.
+      attributes = ["* text=auto eol=lf"];
 
       # Installs git-lfs and its global filter, so clones and pulls check out the
       # real LFS files (assets/) instead of ~130-byte pointer files. A clone made
