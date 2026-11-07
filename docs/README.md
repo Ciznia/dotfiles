@@ -4,30 +4,25 @@ Personal configuration for my machines — a native NixOS laptop (dual-boot), th
 same laptop's Windows side through NixOS-WSL, and an Ubuntu+Nix WSL (standalone
 home-manager). Feel free to read, copy, or adapt anything here.
 
-The setup leans on **two tools**:
-
-- **Nix flake** — the declarative core: per-host NixOS + home-manager
-  configuration and the dev environment. See [NIX.md](NIX.md).
-- **Ansible** — a thin **preflight** for what can't be committed as flat
-  files, chiefly restoring my SSH/GPG identity from an encrypted vault. See
-  [ANSIBLE.md](ANSIBLE.md).
+Everything is a **Nix flake**: per-host NixOS + home-manager configuration and
+the dev environment. See [NIX.md](NIX.md).
 
 ## Requirements
 
 - [Nix](https://nixos.org/download) with flakes enabled
   (`experimental-features = nix-command flakes`).
 
-Everything else (ansible, gpg, git-lfs, …) comes from `nix develop`. The
+Everything else (gpg, sops, rbw, git-lfs, …) comes from `nix develop`. The
 wallpaper and lock video are Git-LFS tracked: in a clone made without git-lfs,
 run `git lfs install --local && git lfs pull` inside the dev shell.
 
 ## Usage
 
 ```bash
-nix develop                                     # dev shell (ansible, gpg, openssh, formatter, …)
+nix develop                                     # dev shell (gpg, sops, rbw, formatter, …)
 nix fmt                                         # format the tree with alejandra
 
-ansible-playbook ansible/playbooks/keys.yml     # restore the SSH/GPG identity (inside nix develop)
+scripts/machine-keys.sh                         # this machine's ssh key + gpg subkey (once)
 
 sudo nixos-rebuild switch --flake .#<host>      # NixOS hosts
 home-manager    switch --flake .#ciznia@<host>  # standalone hosts
