@@ -66,11 +66,13 @@
 
   "git.autofetch": true,
   "git.confirmSync": false,
+  "git.detectWorktrees": true,
   "git.enableSmartCommit": true,
   "git.fetchOnPull": true,
   "git.pullBeforeCheckout": true,
   "git.rebaseWhenSync": true,
   "git.replaceTagsWhenPull": true,
+  "git.repositoryScanMaxDepth": 3,
   "git.suggestSmartCommit": false,
 
   "githubPullRequests.createOnPublishBranch": "never",
