@@ -4,6 +4,7 @@
   # them all is inert until a recipe (home/*.nix) flips the flags.
   imports = [
     ./apps.nix
+    ./claude
     ./cli.nix
     ./desktop
     ./dev.nix

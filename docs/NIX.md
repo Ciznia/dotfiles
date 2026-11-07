@@ -53,11 +53,12 @@ What each host turns on:
 
 | Flag                                                                     | glados | atlas | pbody |
 |--------------------------------------------------------------------------|:------:|:-----:|:-----:|
-| home: `git`, `rbw`, `machineKeys`, `passwords`, `shell`, `nvim`, `cli`, `dev`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
+| home: `git`, `rbw`, `machineKeys`, `passwords`, `shell`, `nvim`, `cli`, `dev`, `claude`, `k8s`, `apps`, `theme` |   ✓    |   ✓   |   ✓   |
 | home: `gaming`                                                           |   ✓    |       |   ✓   |
 | home: `desktop` (qtile, kitty, dunst, lock)                              |   ✓    |       |       |
 | home: `vscode` (glados) / `vscode.server` (WSL: atlas, pbody)          |   ✓    |   ✓   |   ✓   |
 | home: `zen` (Zen browser next to Firefox; atlas via WSLg)                 |   ✓    |   ✓   |       |
+| home: `claude.windows` (the Windows app's `.claude`, copied to `/mnt/c`)  |        |   ✓   |       |
 | nixos: `base`, `fonts`, `virtualisation.docker`                          |   ✓    |   ✓   |       |
 | nixos: `console`, `desktop`, `gaming`, `laptop`, `usb`, `secureBoot`, `virtualisation.{libvirt,waydroid}` | ✓ | | |
 

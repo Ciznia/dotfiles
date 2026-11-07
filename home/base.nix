@@ -13,6 +13,7 @@
     nvim.enable = lib.mkDefault true;
     cli.enable = lib.mkDefault true;
     dev.enable = lib.mkDefault true;
+    claude.enable = lib.mkDefault true;
     k8s.enable = lib.mkDefault true;
     apps.enable = lib.mkDefault true;
     theme.enable = lib.mkDefault true;
