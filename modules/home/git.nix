@@ -80,6 +80,9 @@ in {
         # IDEs
         ".idea"
         ".vs"
+
+        # Git worktrees kept at the repo root
+        "/worktrees/"
       ];
 
       # Global attributes (~/.config/git/attributes): LF in the repo.
