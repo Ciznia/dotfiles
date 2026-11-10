@@ -125,6 +125,7 @@
     "**/.forgejo/workflows/*.yml",
     "**/.forgejo/workflows/*.yaml"
   ],
+  "direnv.restart.automatic": true,
   "zig.path": "zig",
   "zig.zls.enabled": "on",
   "zig.zls.path": "zls",
