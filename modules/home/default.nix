@@ -12,6 +12,7 @@
     ./git.nix
     ./k8s.nix
     ./machine-keys.nix
+    ./nushell.nix
     ./nvim.nix
     ./passwords.nix
     ./rbw.nix

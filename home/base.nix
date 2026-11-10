@@ -10,6 +10,7 @@
     passwords.enable = lib.mkDefault true;
 
     shell.enable = lib.mkDefault true;
+    nushell.enable = lib.mkDefault true;
     nvim.enable = lib.mkDefault true;
     cli.enable = lib.mkDefault true;
     dev.enable = lib.mkDefault true;
