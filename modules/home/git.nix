@@ -100,6 +100,20 @@ in {
       };
     };
 
+    # The login (hosts.yml) stays unmanaged: `gh auth login` writes it.
+    programs.gh = {
+      enable = true;
+      # GitHub remotes go over ssh (insteadOf above), so git never needs gh's
+      # https token.
+      gitCredentialHelper.enable = false;
+      settings = {
+        git_protocol = "ssh";
+        aliases.co = "pr checkout";
+      };
+    };
+    # Replaces the config.yml gh wrote itself, which only held the defaults.
+    xdg.configFile."gh/config.yml".force = true;
+
     programs.gpg = {
       enable = true;
       # Bare `gpg --sign`/`--clearsign` otherwise picks the first secret key in
