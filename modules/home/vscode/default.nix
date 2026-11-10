@@ -70,6 +70,7 @@
       vscjava.vscode-java-pack
       vscjava.vscode-java-test
       vscjava.vscode-maven
+      ziglang.vscode-zig
 
       # Remote and collaboration
       ms-azuretools.vscode-containers

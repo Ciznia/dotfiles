@@ -125,6 +125,9 @@
     "**/.forgejo/workflows/*.yml",
     "**/.forgejo/workflows/*.yaml"
   ],
+  "zig.path": "zig",
+  "zig.zls.enabled": "on",
+  "zig.zls.path": "zls",
 
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features"
@@ -149,5 +152,8 @@
   },
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[zig]": {
+    "editor.defaultFormatter": "ziglang.vscode-zig"
   }
 }
