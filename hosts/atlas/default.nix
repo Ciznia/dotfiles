@@ -103,5 +103,34 @@
     };
   };
 
+  # With `networkingMode=virtioproxy` in Windows' .wslconfig (what lets WSL out
+  # through the Cisco VPN), WSL routes all TCP for 127.0.0.1 to Windows and
+  # only brings back the ports it saw being bound. It misses listeners that
+  # asked for port 0, such as the VS Code server, so they refuse every
+  # connection made from inside WSL. Dropping the rule keeps loopback TCP in
+  # Linux; the cost is that `localhost` here no longer reaches Windows' ports.
+  systemd.services.wsl-loopback-tcp = {
+    description = "Keep loopback TCP inside WSL";
+    wantedBy = ["multi-user.target"];
+    # The rule is WSL's, made once per boot: nothing to redo on a switch.
+    restartIfChanged = false;
+    path = [pkgs.iproute2 pkgs.gnugrep pkgs.coreutils];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      # WSL may add the rule a moment after systemd starts. In the other
+      # networking modes it never comes, and this leaves things as they are.
+      for _ in $(seq 10); do
+        if ip rule show priority 1 | grep -q 'ipproto tcp lookup 127'; then
+          ip rule del priority 1 ipproto tcp lookup 127
+          break
+        fi
+        sleep 1
+      done
+    '';
+  };
+
   system.stateVersion = "26.05";
 }
