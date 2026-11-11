@@ -34,6 +34,19 @@ in {
         url."ssh://git@github.com/".insteadOf = "https://github.com/";
       };
 
+      # archi-lab's GitLab (TH Köln) only marks a commit Verified when its
+      # author email is one verified on the account there: the TH Köln address,
+      # which is also a uid of the signing key.
+      includes =
+        map (url: {
+          condition = "hasconfig:remote.*.url:${url}";
+          contents.user.email = "gabriel_jean-louis.hosquet@smail.th-koeln.de";
+        }) [
+          "git@git.archi-lab.io:*/**"
+          "ssh://git@git.archi-lab.io/**"
+          "https://git.archi-lab.io/**"
+        ];
+
       # Global ignores (~/.config/git/ignore), from the old config.
       ignores = [
         # Project config files
