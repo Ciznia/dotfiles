@@ -136,6 +136,13 @@ in {
     # Replaces the config.yml gh wrote itself, which only held the defaults.
     xdg.configFile."gh/config.yml".force = true;
 
+    # Cargo's own git client follows the insteadOf above but only authenticates
+    # through an ssh agent, which there isn't; the git CLI reads the key itself.
+    home.file.".cargo/config.toml".text = ''
+      [net]
+      git-fetch-with-cli = true
+    '';
+
     programs.gpg = {
       enable = true;
       # Bare `gpg --sign`/`--clearsign` otherwise picks the first secret key in

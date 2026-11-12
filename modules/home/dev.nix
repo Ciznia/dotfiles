@@ -24,6 +24,9 @@
       nixpkgs-review
     ];
 
+    # What `cargo install` installs.
+    home.sessionPath = ["$HOME/.cargo/bin"];
+
     programs.lazygit = {
       enable = true;
       settings.git.overrideGpg = true;
