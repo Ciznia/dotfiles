@@ -18,6 +18,13 @@
       nodejs
       (callPackage ./pkgs/ghcup.nix {})
 
+      # Outside a project's devshell, whose toolchain comes first. The wasm
+      # target is what `termoxide run` builds an app's guest for.
+      (rust-bin.stable.latest.default.override {
+        extensions = ["rust-src"];
+        targets = ["wasm32-wasip2"];
+      })
+
       nil
       nix-index
       nix-output-monitor

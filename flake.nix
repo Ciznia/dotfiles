@@ -54,6 +54,11 @@
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -84,11 +89,16 @@
       };
     };
 
+    overlays = [
+      stableOverlay
+      inputs.nix-vscode-extensions.overlays.default
+      inputs.rust-overlay.overlays.default
+    ];
+
     mkPkgs = system:
       import nixpkgs {
-        inherit system;
+        inherit system overlays;
         config.allowUnfree = true;
-        overlays = [stableOverlay inputs.nix-vscode-extensions.overlays.default];
       };
 
     homeSharedModules = [
@@ -126,7 +136,7 @@
             home-manager.nixosModules.home-manager
             {
               nixpkgs.config.allowUnfree = true;
-              nixpkgs.overlays = [stableOverlay inputs.nix-vscode-extensions.overlays.default];
+              nixpkgs.overlays = overlays;
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.extraSpecialArgs = {inherit inputs username;};
