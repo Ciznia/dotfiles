@@ -32,6 +32,12 @@ in {
         push.autoSetupRemote = true;
         # GitHub over ssh, even for https URLs (copied from a browser).
         url."ssh://git@github.com/".insteadOf = "https://github.com/";
+        # archi-lab's GitLab over https, with a personal access token from the
+        # password store: the account is SSO-only, so it has no password.
+        credential."https://git.archi-lab.io" = {
+          username = "ghosquet";
+          helper = ''!f() { test "$1" = get && echo "password=$(${pkgs.gopass}/bin/gopass show -o gitlab/archi-lab/token)"; }; f'';
+        };
       };
 
       # archi-lab's GitLab (TH Köln) only marks a commit Verified when its
@@ -40,7 +46,10 @@ in {
       includes =
         map (url: {
           condition = "hasconfig:remote.*.url:${url}";
-          contents.user.email = "gabriel_jean-louis.hosquet@smail.th-koeln.de";
+          contents.user = {
+            name = "Gabriel Jean-Louis Hosquet";
+            email = "gabriel_jean-louis.hosquet@smail.th-koeln.de";
+          };
         }) [
           "git@git.archi-lab.io:*/**"
           "ssh://git@git.archi-lab.io/**"
