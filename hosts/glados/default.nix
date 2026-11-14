@@ -1,10 +1,18 @@
 {
+  inputs,
   lib,
   pkgs,
   username,
   ...
 }: {
-  imports = [./hardware-configuration.nix];
+  imports = [
+    ./hardware-configuration.nix
+    # Tuning presets on top of the hardware scan: TLP power management,
+    # weekly fstrim, Intel microcode + iGPU video decoding.
+    inputs.nixos-hardware.nixosModules.common-pc-laptop
+    inputs.nixos-hardware.nixosModules.common-pc-ssd
+    inputs.nixos-hardware.nixosModules.common-cpu-intel
+  ];
 
   # Bootloader: lanzaboote (Secure Boot), which replaces systemd-boot rather
   # than layering on GRUB — see modules/nixos/secureboot.nix. Windows is NOT in
@@ -15,10 +23,25 @@
 
   networking.hostName = "glados";
   networking.networkmanager.enable = true;
-  nix.settings.experimental-features = ["nix-command" "flakes"];
 
-  ciznia.desktop.enable = true; # X11 + SDDM + qtile + audio + lock (system half)
-  ciznia.secureBoot.enable = true; # signed boot chain (lanzaboote) — see docs/NIX.md
+  ciznia = {
+    base.enable = true;
+    console.enable = true;
+    desktop.enable = true; # X11 + SDDM + qtile + audio + lock (system half)
+    fonts.enable = true;
+    gaming.enable = true;
+    laptop.enable = true;
+    secureBoot.enable = true; # signed boot chain (lanzaboote) — see docs/NIX.md
+    usb.enable = true;
+    virtualisation = {
+      docker.enable = true;
+      libvirt.enable = true;
+      waydroid.enable = true;
+    };
+  };
+
+  # Compressed swap in RAM, used before the disk swap (which stays for hibernate).
+  zramSwap.enable = true;
 
   users.users.${username} = {
     isNormalUser = true;
@@ -87,10 +110,12 @@
       };
       mobile = {
         fingerprint.eDP-1 = fingerprint.laptop;
-        config.eDP-1 = panel // {
-          primary = true;
-          position = "0x0";
-        };
+        config.eDP-1 =
+          panel
+          // {
+            primary = true;
+            position = "0x0";
+          };
       };
     };
   };
@@ -113,9 +138,10 @@
   time.hardwareClockInLocalTime = false;
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # Keyboard: FR default + US secondary; toggle with Alt+Shift.
+  # Keyboard: FR. Alt+Shift switches layouts once a second one is added
+  # (e.g. layout = "fr,us"); with one layout it does nothing.
   services.xserver.xkb = {
-    layout = "fr,us";
+    layout = "fr";
     options = "grp:alt_shift_toggle";
   };
   console.keyMap = "fr";

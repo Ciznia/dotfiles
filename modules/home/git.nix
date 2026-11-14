@@ -4,12 +4,21 @@
   pkgs,
   ...
 }: let
-  # The GPG identity restored by the Ansible preflight (`gpg --show-keys`).
-  signingKey = "A8A7205E2FD4672A77058657654E6EA7882F6671";
+  inherit (config.ciznia.git) signingKey;
 in {
   # git + gpg live behind one flag: signed commits need the key, the agent, and
   # a pinentry, so enabling git pulls all of it in.
-  options.ciznia.git.enable = lib.mkEnableOption "git (with gpg signing + agent)";
+  options.ciznia.git = {
+    enable = lib.mkEnableOption "git (with gpg signing + agent)";
+
+    signingKey = lib.mkOption {
+      type = lib.types.str;
+      default = "A8A7205E2FD4672A77058657654E6EA7882F6671";
+      # The master, without "!": gpg then signs with the newest signing subkey
+      # whose secret is here, i.e. this machine's own (scripts/machine-keys.sh).
+      description = "GPG key (fingerprint) that signs commits.";
+    };
+  };
 
   config = lib.mkIf config.ciznia.git.enable {
     programs.git = {
@@ -20,8 +29,90 @@ in {
         user.email = "hosquetgabriel@gmail.com";
         init.defaultBranch = "main";
         pull.rebase = true;
+        # Drop remote-tracking branches and tags the remote deleted. pruneTags
+        # also deletes local tags that were never pushed.
+        fetch.prune = true;
+        fetch.pruneTags = true;
         push.autoSetupRemote = true;
+        # GitHub over ssh, even for https URLs (copied from a browser).
+        url."ssh://git@github.com/".insteadOf = "https://github.com/";
+        # archi-lab's GitLab over https, with a personal access token from the
+        # password store: the account is SSO-only, so it has no password.
+        credential."https://git.archi-lab.io" = {
+          username = "ghosquet";
+          helper = ''!f() { test "$1" = get && echo "password=$(${pkgs.gopass}/bin/gopass show -o gitlab/archi-lab/token)"; }; f'';
+        };
       };
+
+      # archi-lab's GitLab (TH Köln) only marks a commit Verified when its
+      # author email is one verified on the account there: the TH Köln address,
+      # which is also a uid of the signing key.
+      includes =
+        map (url: {
+          condition = "hasconfig:remote.*.url:${url}";
+          contents.user = {
+            name = "Gabriel Jean-Louis Hosquet";
+            email = "gabriel_jean-louis.hosquet@smail.th-koeln.de";
+          };
+        }) [
+          "git@git.archi-lab.io:*/**"
+          "ssh://git@git.archi-lab.io/**"
+          "https://git.archi-lab.io/**"
+        ];
+
+      # Global ignores (~/.config/git/ignore), from the old config.
+      ignores = [
+        # Project config files
+        ".pre-commit-config.yaml"
+        "compile_commands.json"
+
+        # C
+        ".cache"
+        "*.gc??"
+        "vgcore.*"
+
+        # Python
+        "venv"
+        "__pycache__"
+
+        # Web
+        "node_modules"
+        "dist"
+        "build"
+        "out"
+        ".vite"
+        ".next"
+        ".cursor"
+
+        # direnv
+        ".direnv"
+        ".envrc"
+
+        # Environment files (.env, .env.local, .env.dev.local, ...), not templates
+        ".env"
+        ".env.*"
+        "!.env*.example"
+
+        # Editor backups and locks
+        "*~"
+        "#*#"
+
+        # macOS
+        ".DS_Store"
+
+        # Nix build output
+        "result"
+
+        # IDEs
+        ".idea"
+        ".vs"
+
+        # Git worktrees kept at the repo root
+        "/worktrees/"
+      ];
+
+      # Global attributes (~/.config/git/attributes): LF in the repo.
+      attributes = ["* text=auto eol=lf"];
 
       # Installs git-lfs and its global filter, so clones and pulls check out the
       # real LFS files (assets/) instead of ~130-byte pointer files. A clone made
@@ -35,6 +126,27 @@ in {
       };
     };
 
+    # The login (hosts.yml) stays unmanaged: `gh auth login` writes it.
+    programs.gh = {
+      enable = true;
+      # GitHub remotes go over ssh (insteadOf above), so git never needs gh's
+      # https token.
+      gitCredentialHelper.enable = false;
+      settings = {
+        git_protocol = "ssh";
+        aliases.co = "pr checkout";
+      };
+    };
+    # Replaces the config.yml gh wrote itself, which only held the defaults.
+    xdg.configFile."gh/config.yml".force = true;
+
+    # Cargo's own git client follows the insteadOf above but only authenticates
+    # through an ssh agent, which there isn't; the git CLI reads the key itself.
+    home.file.".cargo/config.toml".text = ''
+      [net]
+      git-fetch-with-cli = true
+    '';
+
     programs.gpg = {
       enable = true;
       # Bare `gpg --sign`/`--clearsign` otherwise picks the first secret key in
@@ -42,38 +154,16 @@ in {
       settings.default-key = signingKey;
     };
 
-    # home-manager only exports SSH_AUTH_SOCK (and GPG_TTY) from shells it
-    # manages; unmanaged, a login bash never learns about gpg-agent's ssh socket
-    # ("Could not open a connection to your authentication agent").
-    programs.bash.enable = true;
-
     # gpg-agent configured here (home-manager), NOT via the NixOS
     # programs.gnupg.agent — so it behaves identically on standalone hosts and
-    # the two never fight over the socket. It also doubles as the ssh-agent
-    # (exports SSH_AUTH_SOCK) and is what the Ansible `--tags agent` flow presets.
+    # the two never fight over the socket. Signing only: the keys carry no
+    # passphrase and ssh reads ~/.ssh/id_ed25519 directly, without an agent.
     services.gpg-agent = {
       enable = true;
-      enableSshSupport = true;
 
       # Terminal pinentry — works on WSL and headless. The desktop host can
       # override this to a graphical pinentry later.
       pinentry.package = pkgs.pinentry-curses;
-
-      # Enter the passphrase ~once per session; presets/keys stay cached.
-      defaultCacheTtl = 86400;
-      maxCacheTtl = 86400;
-      defaultCacheTtlSsh = 86400;
-      maxCacheTtlSsh = 86400;
-
-      # Required by the Ansible agent flow:
-      #   allow-preset-passphrase → gpg-preset-passphrase loads the gpg
-      #                             passphrase from the vault (no prompt)
-      #   allow-loopback-pinentry → scripted gpg (key export/import) in
-      #                             loopback mode
-      extraConfig = ''
-        allow-preset-passphrase
-        allow-loopback-pinentry
-      '';
     };
   };
 }
