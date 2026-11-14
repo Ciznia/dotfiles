@@ -103,6 +103,23 @@
     };
   };
 
+  # WSL writes /etc/resolv.conf once, at its start, from whatever network
+  # Windows has then, and the Cisco VPN lets no DNS server through but TH
+  # Köln's own: connecting or leaving the VPN afterwards left no working
+  # resolver. (`dnsTunneling` does nothing under virtioproxy.) So a fixed list
+  # instead, with systemd-resolved staying on whichever server answers:
+  # TH Köln's on the VPN, the public ones off it.
+  wsl.wslConf.network.generateResolvConf = false;
+  networking.nameservers = ["139.6.1.2" "139.6.1.3" "1.1.1.1" "9.9.9.9"];
+  services.resolved = {
+    enable = true;
+    settings.Resolve = {
+      DNSSEC = "false";
+      # The list above is the whole list.
+      FallbackDNS = "";
+    };
+  };
+
   # With `networkingMode=virtioproxy` in Windows' .wslconfig (what lets WSL out
   # through the Cisco VPN), WSL routes all TCP for 127.0.0.1 to Windows and
   # only brings back the ports it saw being bound. It misses listeners that
