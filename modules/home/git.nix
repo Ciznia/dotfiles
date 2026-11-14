@@ -29,6 +29,10 @@ in {
         user.email = "hosquetgabriel@gmail.com";
         init.defaultBranch = "main";
         pull.rebase = true;
+        # Drop remote-tracking branches and tags the remote deleted. pruneTags
+        # also deletes local tags that were never pushed.
+        fetch.prune = true;
+        fetch.pruneTags = true;
         push.autoSetupRemote = true;
         # GitHub over ssh, even for https URLs (copied from a browser).
         url."ssh://git@github.com/".insteadOf = "https://github.com/";
