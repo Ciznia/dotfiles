@@ -63,6 +63,10 @@
     "fontFamily": "MesloLGM Nerd Font Mono",
     "fontSize": 14
   },
+  "terminal.integrated.profiles.linux": {
+    "nu": { "path": "nu" }
+  },
+  "terminal.integrated.defaultProfile.linux": "nu",
 
   "git.autofetch": true,
   "git.confirmSync": false,

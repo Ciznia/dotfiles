@@ -115,7 +115,14 @@
       "explorer.confirm"
       "chat."
     ];
-  serverSettings = lib.filterAttrs (name: _: !uiOnly name) settings;
+  # Except the Linux terminal profiles: the server is the machine that spawns them.
+  forServer = name:
+    !uiOnly name
+    || lib.elem name [
+      "terminal.integrated.profiles.linux"
+      "terminal.integrated.defaultProfile.linux"
+    ];
+  serverSettings = lib.filterAttrs (name: _: forServer name) settings;
 
   pin = cfg.server.pin;
   # The tarball unpacked as the Windows app would: bin/<commit>/{node,bin/code-server,...}.

@@ -65,6 +65,9 @@
         remember_window_size = "no";
         window_padding_width = 5;
         enable_audio_bell = false;
+
+        # nu in every new window; zsh stays the login shell.
+        shell = lib.mkIf config.ciznia.nushell.enable (lib.getExe config.programs.nushell.package);
       };
     };
   };
