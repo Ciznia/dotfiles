@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }: {
   # A second interactive shell next to zsh, which stays the login shell. zoxide,
@@ -25,15 +26,16 @@
         query # query json/xml/web
       ];
 
-      # Home Manager copies home.shellAliases here too; these three use bash
+      # Home Manager copies home.shellAliases here too; these two use bash
       # syntax (&&, |&), so Nushell gets them as commands below instead.
       shellAliases = lib.mkForce (
-        removeAttrs config.home.shellAliases ["ufda" "rebuild" "update"]
+        removeAttrs config.home.shellAliases ["rebuild" "update"]
         // {cd = "z";}
       );
 
+      # ufda's own module (its completions) instead of the package's script.
       extraConfig = ''
-        def ufda [] { "use flake" | save --force .envrc; direnv allow }
+        use ${inputs.ufda.packages.${pkgs.stdenv.hostPlatform.system}.default}/share/ufda
         def rebuild [] { bash -c r#'${config.home.shellAliases.rebuild}'# }
         def update [] { do { cd ~/dotfiles; nix flake update; rebuild } }
       '';

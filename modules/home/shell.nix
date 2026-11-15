@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }: let
   cfg = config.ciznia.shell;
@@ -26,6 +27,9 @@ in {
   config = lib.mkIf cfg.enable {
     home.sessionVariables.EDITOR = "nvim";
 
+    # `use flake` into .envrc + `direnv allow`, as a command in every shell.
+    home.packages = [inputs.ufda.packages.${pkgs.stdenv.hostPlatform.system}.default];
+
     # The zsh and bash wakatime plugins call ~/.wakatime/wakatime-cli (the
     # official installer's path), not the one on PATH.
     # vim-wakatime downloads its own cli into ~/.wakatime and points this link at
@@ -39,7 +43,6 @@ in {
       ll = "ls -l";
       dodo = "shutdown now";
       lz = "lazygit";
-      ufda = "echo 'use flake' | tee .envrc && direnv allow";
       # Build, show what changes (nvd), then switch. Runs in the current
       # directory, so ./result lands there.
       rebuild = "nix-shell -p nvd nix-output-monitor --run '

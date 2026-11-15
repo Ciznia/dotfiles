@@ -322,6 +322,7 @@
         "nixpkgs-stable": "nixpkgs-stable",
         "rust-overlay": "rust-overlay_2",
         "sops-nix": "sops-nix",
+        "ufda": "ufda",
         "zen-browser": "zen-browser"
       }
     },
@@ -383,6 +384,26 @@
       "original": {
         "owner": "Mic92",
         "repo": "sops-nix",
+        "type": "github"
+      }
+    },
+    "ufda": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794783579,
+        "narHash": "sha256-TBbW5qu4m9nXSvd6bvgBen+DMSKJKP+P6Sq+Wz6IFE0=",
+        "owner": "renman-ymd",
+        "repo": "ufda",
+        "rev": "c0fbfd12b55b435dcf6d4ebcf6b9a7f4c859056c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "renman-ymd",
+        "repo": "ufda",
         "type": "github"
       }
     },

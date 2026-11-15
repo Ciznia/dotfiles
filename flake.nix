@@ -59,6 +59,11 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    ufda = {
+      url = "github:renman-ymd/ufda";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
