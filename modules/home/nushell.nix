@@ -37,7 +37,9 @@
       extraConfig = ''
         use ${inputs.ufda.packages.${pkgs.stdenv.hostPlatform.system}.default}/share/ufda
         def rebuild [] { bash -c r#'${config.home.shellAliases.rebuild}'# }
-        def update [] { do { cd ~/dotfiles; nix flake update; rebuild } }
+        # Not `update`: that would shadow Nushell's own `update` (tables, records)
+        # in every module this file loads, jj-ci's among them.
+        def upgrade [] { do { cd ~/dotfiles; nix flake update; rebuild } }
       '';
     };
 
