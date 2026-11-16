@@ -14,6 +14,8 @@
     hash = "sha256-Heq/VxfCqFhnYxAm2ejymANdPmZ5uNixuZiuC/53VQE=";
   };
 in {
+  imports = [inputs.jj-ci.homeModules.default];
+
   options.ciznia.shell = {
     enable = lib.mkEnableOption "zsh + bash setup (prompt, plugins, aliases, direnv, zoxide)";
 
@@ -29,6 +31,10 @@ in {
 
     # `use flake` into .envrc + `direnv allow`, as a command in every shell.
     home.packages = [inputs.ufda.packages.${pkgs.stdenv.hostPlatform.system}.default];
+
+    # Pre-push/commit-msg checks from a repo's .jj-ci.toml (`jj-ci install`).
+    # programs.jujutsu stays off, so it adds no `jj ci`/`jj push` aliases.
+    programs.jj-ci.enable = true;
 
     # The zsh and bash wakatime plugins call ~/.wakatime/wakatime-cli (the
     # official installer's path), not the one on PATH.

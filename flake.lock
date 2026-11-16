@@ -168,6 +168,26 @@
         "type": "github"
       }
     },
+    "jj-ci": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794787195,
+        "narHash": "sha256-nGX+Vod0p/wDVvc8ATXSVsluAYNS9PcluEKDFoySsV8=",
+        "owner": "renman-ymd",
+        "repo": "jj-ci",
+        "rev": "8125d11be9dd460e804554d5efc162fe83be4f3a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "renman-ymd",
+        "repo": "jj-ci",
+        "type": "github"
+      }
+    },
     "lanzaboote": {
       "inputs": {
         "crane": "crane",
@@ -314,6 +334,7 @@
         "firefox-addons": "firefox-addons",
         "git-hooks": "git-hooks",
         "home-manager": "home-manager",
+        "jj-ci": "jj-ci",
         "lanzaboote": "lanzaboote",
         "nix-vscode-extensions": "nix-vscode-extensions",
         "nixos-hardware": "nixos-hardware",

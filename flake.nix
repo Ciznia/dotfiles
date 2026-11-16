@@ -64,6 +64,11 @@
       url = "github:renman-ymd/ufda";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    jj-ci = {
+      url = "github:renman-ymd/jj-ci";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
