@@ -62,6 +62,7 @@
       ms-vscode.cpptools
       ms-vscode.makefile-tools
       rust-lang.rust-analyzer
+      thenuprojectcontributors.vscode-nushell-lang
       vadimcn.vscode-lldb
       redhat.java
       vscjava.vscode-gradle
