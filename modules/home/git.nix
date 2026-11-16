@@ -132,6 +132,7 @@ in {
       # GitHub remotes go over ssh (insteadOf above), so git never needs gh's
       # https token.
       gitCredentialHelper.enable = false;
+      extensions = [pkgs.gh-stack];
       settings = {
         git_protocol = "ssh";
         aliases.co = "pr checkout";
