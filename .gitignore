@@ -1,4 +1,4 @@
-# Ansible vault password file — NEVER commit
+# Old Ansible vault password, still lying around in some clones — NEVER commit
 .vault_pass
 **/.vault_pass
 
@@ -9,3 +9,7 @@
 *.qcow2
 *.vhd
 *.vhdx
+
+# Python bytecode (e.g. from `qtile check`)
+__pycache__/
+.pre-commit-config.yaml

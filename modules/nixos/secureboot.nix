@@ -23,7 +23,7 @@
       # Each generation puts a signed stub (+ kernel/initrd when they change) on
       # the ESP, and glados' ESP is only 500M. Older generations stay in the
       # store and remain reachable with `nixos-rebuild switch --rollback`.
-      configurationLimit = 3;
+      configurationLimit = 5;
     };
     # Lanzaboote writes loader.conf from this option. Left on (the NixOS
     # default), anyone at the boot menu can press `e` and append e.g.
