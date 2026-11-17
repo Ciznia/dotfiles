@@ -25,6 +25,16 @@ declares: read it before assuming one.
 - A pinned package such as `python314` is that major.minor (nixpkgs never pins
   a patch version), exposed under its own name and as `python3`/`python`.
 
+# Shell
+
+The owner's interactive shell is Nushell (zsh stays the login shell), on every
+host. Write each command you give the owner to run in Nushell syntax, in a
+fenced block tagged `nu`: no `&&`, heredocs or `$(...)`; use `;`, `(...)` and
+`$env.VAR`. Wrap anything that only works in bash, such as a script that has
+to be sourced, in `bash -c r#'...'#`, as `modules/home/nushell.nix` does for
+`rebuild`. This is about the commands you hand over, not the ones you run
+yourself through your own shell tools.
+
 # Git workflow
 
 ## Worktrees
